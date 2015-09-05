@@ -11,7 +11,7 @@ Use 0 to 127 for maximum expression (still not a lot of colors...)
 Saturation: set as a control change before sending the note
 """
 
-import multiprocessing
+import time
 
 import mido
 
@@ -79,6 +79,12 @@ def unit_float_to_7bit(number):
     """Convert a float on the range [0,1] to an int on the range [0,127]."""
     return min(int(number*128), 127)
 
+def note_onoff_pair(channel, note, velocity):
+    on = mido.Message('note_on', channel=channel, note=note, velocity=velocity)
+    off = mido.Message('note_off', channel=channel, note=note, velocity=velocity)
+
+    return on, off
+
 class ColorOrganist(object):
     """Takes a stream of colors and sends them to a color organ.
 
@@ -106,36 +112,52 @@ class ColorOrganist(object):
                                channel=self.ctrl_channel,
                                control=CC_SAT,
                                value=saturation)
-        on_msg = mido.Message('note_on', channel=self.ctrl_channel, note=note, velocity=velocity)
-        off_msg = mido.Message('note_off', channel=self.ctrl_channel, note=note, velocity=velocity)
+        on_msg, off_msg = note_onoff_pair(channel=self.ctrl_channel, note=note, velocity=velocity)
 
         self.port.send(sat_msg)
         self.port.send(on_msg)
         self.port.send(off_msg)
 
-    def switch_to_bank(self, bank):
-        """Switch to a named bank."""
+    def select_bank(self, bank):
+        """Select a named bank."""
         try:
-            bank_cc = self.banks[bank]
+            bank_note = self.banks[bank]
         except KeyError:
             raise InvalidBankError("{} is not a valid bank.  Valid banks are {}"
                                    .format(bank, self.banks.keys()))
-        bank_msg = mido.Message('control_change',
-                                channel=self.bank_channel,
-                                control=bank_cc,
-                                value=127)
-        self.port.send(bank_msg)
+        on, off = note_onoff_pair(channel=self.bank_channel,
+                                  note=bank_note,
+                                  velocity=127)
+        self.port.send(on)
+        self.port.send(off)
+
+def test_color_organist_functions():
+
+    p = mido.open_output()
+
+    co = ColorOrganist(p, 0, 1, {'linear': 0, 'all': 1})
+
+    co.select_bank('linear')
+
+    for _ in xrange(8):
+        co.send_color(red())
+        time.sleep(0.3)
+
+    co.select_bank('all')
+    co.send_color(cyan())
+    time.sleep(1.0)
+    co.send_color(magenta())
+    time.sleep(1.0)
+    co.send_color(white())
+
 
 class InvalidBankError(Exception):
     pass
 
 
 
-
-
-
-
-
+if __name__ == '__main__':
+    test_color_organist_functions()
 
 
 
