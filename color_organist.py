@@ -15,8 +15,10 @@ import logging
 import multiprocessing
 import traceback
 import time
+from threading import Thread
 from Queue import Empty
-from multiprocessing import Queue, Process
+import multiprocessing as mp
+from multiprocessing import Process
 from random import Random
 
 import mido
@@ -377,7 +379,7 @@ class ColorOrganistPuppeteer(object):
 
     def start(self):
         """Start this organist."""
-        self.ctrl_queue = Queue()
+        self.ctrl_queue = mp.Queue()
         self.organist_process = Process(target=self.organist.play,
                                         args=(self.ctrl_queue,))
         self.organist_process.start()
@@ -480,7 +482,7 @@ class MidiService(object):
         """Create a new MidiHandler encapsulating a midi port."""
         self.port_name = port_name
         self.running = False
-        self.ctrl_queue = None
+        self.ctrl_queue = mp.Queue()
 
     def start(self):
         """Start the midi handling service."""
@@ -490,7 +492,9 @@ class MidiService(object):
         def run_midi_service(port_name, ctrl_queue):
             # open the midi port
             try:
+                print mido.get_output_names()
                 port = mido.open_output(port_name)
+                print port
             except Exception:
                 logging.error("Could not open midi port {}:".format(port_name))
                 logging.error(traceback.format_exc())
@@ -507,9 +511,8 @@ class MidiService(object):
                 # process a midi event
                 elif msg_type == 'midi':
                     port.send(msg)
-        self.ctrl_queue = Queue()
 
-        self.midi_process = Process(target=run_midi_service,
+        self.midi_process = Thread(target=run_midi_service,
                                     args=(self.port_name, self.ctrl_queue))
         self.midi_process.start()
         self.running = True
@@ -517,16 +520,28 @@ class MidiService(object):
     def stop(self):
         """Stop the midi handling service."""
         if self.running:
-            self.ctrl_queue.put(('stop', None))
+            self.ctrl_queue.put(('command', 'stop'))
             self.midi_process.join()
+            while not self.ctrl_queue.empty():
+                try:
+                    self.ctrl_queue.get(False)
+                except Empty:
+                    pass
             self.ctrl_queue = None
             self.running = False
 
+    def get_client(self):
+        """Return a MidiClient connected to this service."""
+        return MidiClient(self.ctrl_queue)
+
+class MidiClient(object):
+    """Client-side interface to the midi service."""
+    def __init__(self, msg_queue):
+        self.msg_queue = msg_queue
+
     def send(self, msg):
         """Send a midi message using this service."""
-        if not self.running:
-            raise MidiServiceNotRunning()
-        self.ctrl_queue.put(('midi', msg))
+        self.msg_queue.put(('midi', msg))
 
 
 def test_color_organist_functions_local():
@@ -564,9 +579,12 @@ def test_color_organist_functions_local():
         time.sleep(0.3)
 
 def test_co_functions_process():
-    p = mido.open_output()
+    ports = mido.get_output_names()
+    midi_service = MidiService(ports[0])
 
-    organ = ColorOrgan(p, 0, 1, {'linear': 0, 'all': 1})
+    midi_client = midi_service.get_client()
+
+    organ = ColorOrgan(midi_client, 0, 1, {'linear': 0, 'all': 1})
 
     h_gen = UniformRandomPG(0.5, 0.5)
     s_gen = UniformRandomPG(0.5, 0.5)
@@ -580,9 +598,13 @@ def test_co_functions_process():
 
     org_ctrl = ColorOrganistPuppeteer(organist)
 
-    org_ctrl.start()
-    time.sleep(4.0)
-    org_ctrl.stop()
+    try:
+        midi_service.start()
+        org_ctrl.start()
+        time.sleep(4.0)
+    finally:
+        org_ctrl.stop()
+        midi_service.stop()
 
 class InvalidBankError(Exception):
     pass
