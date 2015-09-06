@@ -456,7 +456,6 @@ class ColorOrganist(object):
             # if we are ready to trigger, get a color and send a note
             if self.note_trig.trigger():
                 col = self.color_gen.get()
-                print "sending color {}".format(col)
                 self.organ.send_color(col)
 
             # otherwise, find out how much time we have to process control events
@@ -474,7 +473,60 @@ class ColorOrganist(object):
                 if command_action is not None:
                     self.process_command(command_action)
 
+class MidiService(object):
+    """The interface to a process which handles interfacing with a midi port."""
 
+    def __init__(self, port_name):
+        """Create a new MidiHandler encapsulating a midi port."""
+        self.port_name = port_name
+        self.running = False
+        self.ctrl_queue = None
+
+    def start(self):
+        """Start the midi handling service."""
+        if self.running:
+            return
+        # midi handling service function
+        def run_midi_service(port_name, ctrl_queue):
+            # open the midi port
+            try:
+                port = mido.open_output(port_name)
+            except Exception:
+                logging.error("Could not open midi port {}:".format(port_name))
+                logging.error(traceback.format_exc())
+                return
+
+            # run the midi service
+            while True:
+                # get the next message from the queue
+                msg_type, msg = ctrl_queue.get()
+                # process a command message
+                if msg_type == 'command':
+                    if msg == 'stop':
+                        return
+                # process a midi event
+                elif msg_type == 'midi':
+                    port.send(msg)
+        self.ctrl_queue = Queue()
+
+        self.midi_process = Process(target=run_midi_service,
+                                    args=(self.port_name, self.ctrl_queue))
+        self.midi_process.start()
+        self.running = True
+
+    def stop(self):
+        """Stop the midi handling service."""
+        if self.running:
+            self.ctrl_queue.put(('stop', None))
+            self.midi_process.join()
+            self.ctrl_queue = None
+            self.running = False
+
+    def send(self, msg):
+        """Send a midi message using this service."""
+        if not self.running:
+            raise MidiServiceNotRunning()
+        self.ctrl_queue.put(('midi', msg))
 
 
 def test_color_organist_functions_local():
@@ -536,6 +588,12 @@ class InvalidBankError(Exception):
     pass
 
 class RateError(Exception):
+    pass
+
+class MidiServiceError(Exception):
+    pass
+
+class MidiServiceNotRunning(MidiServiceError):
     pass
 
 
