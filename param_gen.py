@@ -1,4 +1,6 @@
+import math
 from random import Random
+from rate import Rate
 
 
 class ParameterGenerator(object):
@@ -68,25 +70,70 @@ class UniformRandomPG(ParameterGenerator):
 
 class GaussianRandomPG(ParameterGenerator):
     """Generate gaussian-distributed random numbers."""
-    def __init__(self, center, sigma, seed=None):
+    def __init__(self, center, width, seed=None):
         """Create a new gaussian random number generator.
 
-        Will generate random numbers about center with standard deviation sigma.
+        Will generate random numbers about center with standard deviation width.
 
         Args:
             center: the centroid of the generated number cloud
-            sigma: the standard deviation of the generated number cloud
+            width: the standard deviation of the generated number cloud
             seed (optional): specify the seed for this random number generator.
         """
         self.center = center
-        self.sigma = sigma
+        self.width = width
         self.gen = Random()
         if seed is not None:
             self.gen.seed(seed)
 
     def get(self):
         """Generate the next random value."""
-        return self.gen.gauss(center, sigma)
+        return self.gen.gauss(center, width)
+
+class Diffusor(object):
+    """Generate diffusive motion in a random walk style.
+
+    When polled for a value, a diffusor returns a random value selected from
+    a gaussian distribution centered about zero whose standard deviation increases
+    with sqrt(time), mimicking a random walk in the continuous limit.
+
+    After one period given by rate, the full-width half-max of this distribution
+    is defined to be 1.0, implying what amounts to a completely random shift.
+    """
+    def __init__(self, rate, seed=None):
+        """Initialize a diffusor with a rate."""
+        self.rate = rate
+        self.last_called = time.time()
+        self.rand_gen = GaussianRandomPG(0.0, 0.0, seed)
+
+    def get(self):
+        """Get the integrated diffusive shift."""
+        now = time.time()
+        elapsed = now - self.last_called
+        width = math.sqrt(elapsed / (4*self.rate.period))
+        self.rand_gen.width = width
+        self.last_called = now
+        return self.rand_gen.get()
+
+class Twiddle(object):
+    """Wrapper around a creator object to twiddle a parameter when get is called."""
+    def __init__(self, creator, param_gen, operation):
+        """Wrap a creator with a parameter generator and pre-get operation.
+
+        Args:
+            creator: any object with a get method
+            param_gen: a parameter generator to twiddle the creator
+            operation: a function that takes the creator as the first argument
+                and the param_gen's output as the second argument.  this operation
+                is what applies the twiddle to the creator.
+        """
+        self.creator = creator
+        self.param_gen = param_gen
+        self.operation = operation
+
+    def get(self):
+        self.operation(self.creator, self.param_gen.get())
+        return self.creator.get()
 
 
 def in_range(value, min_val=None, max_val=None):
