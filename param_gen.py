@@ -94,7 +94,7 @@ class GaussianRandomPG(ParameterGenerator):
         """Generate the next random value."""
         return self.gen.gauss(self.center, self.width)
 
-class Diffusor(object):
+class Diffusor(ParameterGenerator):
     """Generate diffusive motion in a random walk style.
 
     When polled for a value, a diffusor returns a random value selected from
@@ -118,6 +118,32 @@ class Diffusor(object):
         self.rand_gen.width = width
         self.last_called = now
         return self.rand_gen.get()
+
+class Function(ParameterGenerator):
+    """Provide the value of a temporal, periodic function."""
+    def __init__(self, rate, func):
+        """Create a function generator with a specified function.
+
+        func should take two positional arguments: (phase, rate)
+
+        Internally keeps track of phase on the range [0.0, 1.0)
+        """
+        self.rate = rate
+        self.func = func
+        self._phase = 0
+        self.last_called = time.time()
+
+    @property
+    def phase(self):
+        return self._phase
+
+    @phase.setter
+    def phase(self, phase):
+        self._phase = phase % 1.0
+
+    def get(self):
+        self.phase += (time.time() - self.last_called)/self.rate.period
+        return self.func(self.phase, self.rate)
 
 class Twiddle(object):
     """Wrapper around a creator object to twiddle a parameter when get is called."""
