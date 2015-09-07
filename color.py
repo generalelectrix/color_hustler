@@ -70,10 +70,12 @@ class HSBColorGenerator(object):
 
     def get(self):
         """Get the next random color from this generator."""
-        h_val = self.h_gen.get_constrained(0.0, 1.0)
-        s_val = self.s_gen.get_constrained(0.0, 1.0)
-        b_val = self.b_gen.get_constrained(0.0, 1.0)
+        h_val = self.h_gen.get_constrained(0.0, 1.0, mode='wrap')
+        s_val = self.s_gen.get_constrained(0.0, 1.0, mode='fold')
+        b_val = self.b_gen.get_constrained(0.0, 1.0, mode='fold')
+
         return Color(h_val, s_val, b_val)
+
 
 class ColorSwarm(object):
     """Agglomerate multiple color generators."""

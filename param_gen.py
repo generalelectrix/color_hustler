@@ -1,7 +1,7 @@
 import math
+import time
 from random import Random
 from rate import Rate
-
 
 class ParameterGenerator(object):
     """Helper class to generate random numbers with useful properties."""
@@ -17,7 +17,7 @@ class ParameterGenerator(object):
         """
         raise NotImplementedError("Inheriting classes must override this method.")
 
-    def get_constrained(self, min_val=None, max_val=None, fold_val=True):
+    def get_constrained(self, min_val, max_val, mode='fold'):
         """Get the next value from this generator wrapped to a given interval.
 
         The behavior of this method differs depending on the value of the fold
@@ -25,18 +25,22 @@ class ParameterGenerator(object):
         folded back into range.  Otherwise, out-of-range values will be clipped.
         """
         val = self.get()
-        if fold_val:
+        if mode == 'fold':
             return fold(val, min_val, max_val)
-        else:
+        elif mode == 'clip':
             return clamp(val, min_val, max_val)
+        elif mode == 'wrap':
+            return wrap(val, min_val, max_val)
+        else:
+            raise PGError("Unrecognized constraint mode: {}".format(mode))
 
 class ConstantPG(ParameterGenerator):
     """Helper class to generate constant values."""
-    def __init__(self, value):
-        self.value = value
+    def __init__(self, center):
+        self.center = center
 
     def get(self):
-        return self.value
+        return self.center
 
 class UniformRandomPG(ParameterGenerator):
     """Generate unformly-distributed random numbers."""
@@ -88,7 +92,7 @@ class GaussianRandomPG(ParameterGenerator):
 
     def get(self):
         """Generate the next random value."""
-        return self.gen.gauss(center, width)
+        return self.gen.gauss(self.center, self.width)
 
 class Diffusor(object):
     """Generate diffusive motion in a random walk style.
@@ -170,6 +174,12 @@ def fold(value, min_val=None, max_val=None):
             value = 2*min_val - value
     return value
 
+def wrap(value, min_val, max_val):
+    return ((value - min_val) % max_val) + min_val
+
 def scale(value, min_val, max_val):
     """Scale a unit float to a specified range."""
     return (value * (max_val - min_val)) + min_val
+
+class PGError(Exception):
+    pass

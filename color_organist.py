@@ -25,6 +25,7 @@ import mido
 
 import param_gen as pgen
 from color import Color, HSBColorGenerator
+from color import red, green, blue, cyan, magenta, yellow
 from rate import Rate, ClockTrigger
 
 # control mappings
@@ -272,6 +273,27 @@ class MidiClient(object):
         """Send a midi message using this service."""
         self.msg_queue.put(('midi', msg))
 
+def nice_color_gen_default(start_color):
+    """Instance an aesthetically pleasing color generator.
+
+    start_color is an optional color to start the generator with.  At the moment,
+    this just sets the initial center of the hue generator.
+
+    Hue is driven by a gaussian with width of 0.1.
+    Saturation is driven by a gaussian centered at 1.0 with width 0.2.
+    Brightness is driven by a gaussian centered at 1.0 with width 0.2.
+    """
+    h_gen = pgen.GaussianRandomPG(start_color.hue, 0.1)
+    s_gen = pgen.GaussianRandomPG(1.0, 0.2)
+    b_gen = pgen.GaussianRandomPG(1.0, 0.2)
+    return HSBColorGenerator(h_gen, s_gen, b_gen)
+
+def test_hue_gen(start_color):
+    """Return a color generator that produces a constant color."""
+    h_gen = pgen.ConstantPG(start_color.hue)
+    s_gen = pgen.ConstantPG(1.0)
+    b_gen = pgen.ConstantPG(1.0)
+    return HSBColorGenerator(h_gen, s_gen, b_gen)
 
 def test_color_organist_functions_local():
 
@@ -320,13 +342,18 @@ def test_co_functions_process():
 
     organ = ColorOrgan(midi_client, 0, 1, {'linear': 0, 'all': 1})
 
-    h_gen = pgen.UniformRandomPG(0.5, 0.5)
-    s_gen = pgen.UniformRandomPG(0.5, 0.5)
-    b_gen = pgen.ConstantPG(1.0)
+    #c_gen = nice_color_gen_default(cyan())
+    c_gen = test_hue_gen(red())
 
-    c_gen = HSBColorGenerator(h_gen, s_gen, b_gen)
+    def add_to_hue(cgen, mod):
+        print cgen
+        new_center = pgen.wrap(cgen.h_gen.center + mod, 0.0, 1.0)
+        cgen.h_gen.center = new_center
 
-    note_trig = ClockTrigger(Rate(bpm=120.))
+    diffusor = pgen.Diffusor(Rate(10.0))
+    c_gen = pgen.Twiddle(c_gen, diffusor, add_to_hue)
+
+    note_trig = ClockTrigger(Rate(bpm=240.))
 
     organist = ColorOrganist(organ, c_gen, note_trig)
 
@@ -335,7 +362,7 @@ def test_co_functions_process():
     with midi_service.run():
         try:
             org_ctrl.start()
-            time.sleep(4.0)
+            time.sleep(30.0)
         finally:
             org_ctrl.stop()
 
