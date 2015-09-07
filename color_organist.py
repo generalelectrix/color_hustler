@@ -112,6 +112,10 @@ class ColorOrganistPuppeteer(object):
         self.ctrl_queue.put(ColorOrganistCommand('stop'))
         self.organist_process.join()
 
+    def command(self, name, *args, **kwargs):
+        """Send a command to this organist."""
+        self.ctrl_queue.put(ColorOrganistCommand(name, *args, **kwargs))
+
 class ColorOrganistCommand(object):
     """Class encapsulating a command to a ColorOrganist.
 
@@ -137,31 +141,28 @@ class ColorOrganist(object):
 
     def process_command(self, command):
         """Process a command from the command queue."""
-        # try to get the
+        # try to get the selected command attribute
         try:
             command_call = getattr(self, command.name)
         except AttributeError:
             logging.error("Organist received an unknown command key: {}".format(command_key))
             return
-        try:
-            command_call(*command.args, **command.kwargs)
-        except Exception:
-            logging.error("An error occurred during organist command execution:")
-            logging.error(traceback.format_exc())
+        # if the command is callable, call it
+        if hasattr(command_call, '__call__'):
+            try:
+                command_call(*command.args, **command.kwargs)
+            except Exception:
+                logging.error("An error occurred during organist command execution:")
+                logging.error(traceback.format_exc())
+        # if the command isn't callable but we passed exactly one argument and
+        # no kwargs, perform attribute assignment
+        elif len(command.args) == 1 and not command.kwargs:
+            setattr(self, command.name, command.args[0])
 
     # --- organist command methods ---
 
     def stop(self):
         self.quit = True
-
-    def replace_color_gen(self, gen):
-        self.color_gen = gen
-
-    def replace_note_trig(self, trig):
-        self.note_trig = trig
-
-    def set_trig_rate(self, rate):
-        self.note_trig.rate = rate
 
     def select_bank(self, bank):
         try:
