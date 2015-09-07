@@ -90,6 +90,18 @@ class ColorOrgan(object):
         self.port.send(on)
         self.port.send(off)
 
+def ColorOrganist(object):
+    """Class which uses a color stream to play a color organ."""
+    def __init__(self, note_trig, col_gen):
+        self.note_trig = note_trig
+        self.col_gen = col_gen
+
+    def play(self, organ):
+        """Play a color organ if the moment is right."""
+        # should this organist play a note?
+        if self.note_trig.trigger():
+            organ.send_color(col_gen.get())
+
 def nice_color_gen_default(start_color):
     """Instance an aesthetically pleasing color generator.
 
