@@ -26,7 +26,7 @@ import mido
 import param_gen as pgen
 from color import Color, HSBColorGenerator
 from color import red, green, blue, cyan, magenta, yellow
-from rate import Rate, ClockTrigger
+from rate import Rate, ClockTrigger, WallClock
 
 # control mappings
 CC_SAT = 11
@@ -51,7 +51,8 @@ class ColorOrgan(object):
     this late at night and this close to the show :)
     """
 
-    def __init__(self, port, ctrl_channel, bank_channel, banks=None):
+    def __init__(self, name, port, ctrl_channel, bank_channel, banks=None):
+        self.name = name
         self.port = port
         self.ctrl_channel = ctrl_channel
         self.bank_channel = bank_channel
@@ -369,6 +370,50 @@ def test_co_functions_process():
             time.sleep(60.0)
         finally:
             org_ctrl.stop()
+
+
+class Application(object):
+    """Encapsulate the runtime environment and application code."""
+    def __init__(self, framerate):
+        self.framerate = Rate(hz=framerate)
+        self.render_trigger = ClockTrigger(self.framerate, absolute_time=True)
+        self.named_entities = {}
+
+        self.organs = []
+
+    def run(self):
+        # instance the wall clock and call first tick
+        wc = WallClock()
+        wc.tick()
+        # application loop
+        while True:
+
+            if render_trigger.trigger():
+                # render this frame to midi
+
+                # command the organs to play
+                for organ in organs:
+                    organ.play()
+
+                # update the wall clock for the next frame
+                wc.tick()
+
+            else:
+                while render_trigger.time_until_trig() > 0.0:
+                    # if we have time left until render, use it to process events
+
+                    # wait for an event
+                    #TODO: implement command parsing
+                    # store the command
+                    # update the wall clock
+                    wc.tick()
+                    # apply the command
+
+                    # update the wall clock again
+                    wc.tick()
+
+                    # TODO: have the
+
 
 class InvalidBankError(Exception):
     pass
