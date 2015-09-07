@@ -43,7 +43,6 @@ def note_onoff_pair(channel, note, velocity):
 
     return on, off
 
-
 class ColorOrgan(object):
     """Takes a stream of colors and sends them to a LD50 color organ.
 
@@ -284,16 +283,16 @@ def nice_color_gen_default(start_color):
     Saturation is driven by a gaussian centered at 1.0 with width 0.2.
     Brightness is driven by a gaussian centered at 1.0 with width 0.2.
     """
-    h_gen = pgen.GaussianRandomPG(start_color.hue, 0.1)
-    s_gen = pgen.GaussianRandomPG(1.0, 0.2)
-    b_gen = pgen.GaussianRandomPG(1.0, 0.2)
+    h_gen = pgen.GaussianRandom(start_color.hue, 0.1)
+    s_gen = pgen.GaussianRandom(1.0, 0.2)
+    b_gen = pgen.GaussianRandom(1.0, 0.2)
     return HSBColorGenerator(h_gen, s_gen, b_gen)
 
 def test_hue_gen(start_color):
     """Return a color generator that produces a constant color."""
-    h_gen = pgen.ConstantPG(start_color.hue)
-    s_gen = pgen.ConstantPG(1.0)
-    b_gen = pgen.ConstantPG(1.0)
+    h_gen = pgen.Constant(start_color.hue)
+    s_gen = pgen.Constant(1.0)
+    b_gen = pgen.Constant(1.0)
     return HSBColorGenerator(h_gen, s_gen, b_gen)
 
 def test_color_organist_functions_local():
@@ -319,9 +318,9 @@ def test_color_organist_functions_local():
 
     # check random color generation
     # full brightness, unform random hue and sat
-    h_gen = pgen.UniformRandomPG(0.5, 0.5)
-    s_gen = pgen.UniformRandomPG(0.5, 0.5)
-    b_gen = pgen.ConstantPG(1.0)
+    h_gen = pgen.UniformRandom(0.5, 0.5)
+    s_gen = pgen.UniformRandom(0.5, 0.5)
+    b_gen = pgen.Constant(1.0)
 
     c_gen = HSBColorGenerator(h_gen, s_gen, b_gen)
 
@@ -347,23 +346,27 @@ def test_co_functions_process():
     c_gen = test_hue_gen(red())
 
     def add_to_hue(cgen, mod):
-        print cgen
         new_center = pgen.wrap(cgen.h_gen.center + mod, 0.0, 1.0)
         cgen.h_gen.center = new_center
 
-    diffusor = pgen.Diffusor(Rate(10.0))
-    c_gen = pgen.Twiddle(c_gen, diffusor, add_to_hue)
+    diffusor = pgen.Diffusor(Rate(period=60.0))
+
+    mutator_chain = pgen.MutatorZombieHerd(c_gen)
+    mutator_chain.append(pgen.Twiddler(diffusor, add_to_hue))
+
+    mod_chain = pgen.ModulationChain(mutator_chain)
 
     note_trig = ClockTrigger(Rate(bpm=240.))
 
-    organist = ColorOrganist(organ, c_gen, note_trig)
+    organist = ColorOrganist(organ, mod_chain, note_trig)
 
     org_ctrl = ColorOrganistPuppeteer(organist)
 
     with midi_service.run():
         try:
             org_ctrl.start()
-            time.sleep(30.0)
+            org_ctrl.command('select_bank', 'linear')
+            time.sleep(60.0)
         finally:
             org_ctrl.stop()
 

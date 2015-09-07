@@ -3,8 +3,14 @@ import time
 from random import Random
 from rate import Rate
 
+# --- parameter generators ---
+
 class ParameterGenerator(object):
-    """Helper class to generate random numbers with useful properties."""
+    """Base class for parameter generator objects.
+
+    Any parameter generator which is capable of producing a value on its own
+    should inherit from this class.
+    """
 
     def __init__(self):
         """Inheriting classes should define their own constructor."""
@@ -34,7 +40,7 @@ class ParameterGenerator(object):
         else:
             raise PGError("Unrecognized constraint mode: {}".format(mode))
 
-class ConstantPG(ParameterGenerator):
+class Constant(ParameterGenerator):
     """Helper class to generate constant values."""
     def __init__(self, center):
         self.center = center
@@ -42,7 +48,7 @@ class ConstantPG(ParameterGenerator):
     def get(self):
         return self.center
 
-class UniformRandomPG(ParameterGenerator):
+class UniformRandom(ParameterGenerator):
     """Generate unformly-distributed random numbers."""
     def __init__(self, center, width, seed=None):
         """Create a new uniform random number generator.
@@ -72,7 +78,7 @@ class UniformRandomPG(ParameterGenerator):
     def max_val(self):
         return self.center + self.width
 
-class GaussianRandomPG(ParameterGenerator):
+class GaussianRandom(ParameterGenerator):
     """Generate gaussian-distributed random numbers."""
     def __init__(self, center, width, seed=None):
         """Create a new gaussian random number generator.
@@ -108,7 +114,7 @@ class Diffusor(ParameterGenerator):
         """Initialize a diffusor with a rate."""
         self.rate = rate
         self.last_called = time.time()
-        self.rand_gen = GaussianRandomPG(0.0, 0.0, seed)
+        self.rand_gen = GaussianRandom(0.0, 0.0, seed)
 
     def get(self):
         """Get the integrated diffusive shift."""
@@ -145,48 +151,119 @@ class Function(ParameterGenerator):
         self.phase += (time.time() - self.last_called)/self.rate.period
         return self.func(self.phase, self.rate)
 
-class StaticModifier(ParameterGenerator):
-    """Wrapper around a creater object to add a simple modification.
+# --- modulators ---
+
+class Modulator(object):
+    """Base class for tools to modulate a parameter stream."""
+    def __init__(self):
+        raise NotImplementedError("Inheriting classes must define their own "
+                                  "constructor.")
+    def modulate(self, value):
+        """Apply the modulation operation."""
+        raise NotImplementedError("Inheriting classes must override this method.")
+
+class StaticModifier(Modulator):
+    """Use a fixed value to modulate a signal.
 
     Some uses of this class are things like adding fixed offsets.
     """
-    def __init__(self, creator, value, operation):
-        """Wrap a creator with a static value and operation.
+    def __init__(self, value, operation):
+        """Create a modifier with a static value and operation.
 
         Args:
-            creator: any object with a get method
             value: the value to pass to operation
-            operation: a function that takes the creator's output as the first
-                argument and the value as the second argument
+            operation: a function that takes the fixed value as the first
+                argument and a signal value as the second argument and returns the
+                modulated value.
         """
-        self.creator = creator
         self.value = value
         self.operation = operation
 
-    def get(self):
-        return self.operation(self.value, self.creator.get())
+    def modulate(self, signal):
+        return self.operation(self.value, signal)
 
+# --- parameter generator mutators ---
 
-class Twiddle(ParameterGenerator):
-    """Wrapper around a creator object to twiddle a parameter when get is called."""
-    def __init__(self, creator, param_gen, operation):
+class Mutator(object):
+    """Base class for tools to mutate parameter generators when they are called."""
+    def __init__(self):
+        raise NotImplementedError("Inheriting classes must define their own "
+                                  "constructor.")
+    def mutate(self, param_gen):
+        """Apply the mutation operation to a specified parameter generator."""
+        raise NotImplementedError("Inheriting classes must override this method.")
+
+class Twiddler(Mutator):
+    """Generic parameter twiddler."""
+    def __init__(self, twiddle_gen, operation):
         """Wrap a creator with a parameter generator and pre-get operation.
 
         Args:
-            creator: any object with a get method
-            param_gen: a parameter generator to twiddle the creator
-            operation: a function that takes the creator as the first argument
-                and the param_gen's output as the second argument.  this operation
-                is what applies the twiddle to the creator.
+            param_gen: a parameter generator creating the twiddle value
+            operation: a function that takes a param gen as the first argument
+                and the twiddle value as the second argument.  this operation
+                is what applies the twiddle to the param gen.
         """
-        self.creator = creator
-        self.param_gen = param_gen
+        self.twiddle_gen = twiddle_gen
         self.operation = operation
 
-    def get(self):
-        self.operation(self.creator, self.param_gen.get())
-        return self.creator.get()
+    def mutate(self, param_gen):
+        self.operation(param_gen, self.twiddle_gen.get())
 
+# --- chains ---
+
+class FXChain(ParameterGenerator):
+    """Base class for linear effects chains."""
+    def __init__(self, head):
+        """Initialize a linear effects chain with a source."""
+        if not hasattr(head, 'get'):
+            raise ModulationChainError("The head of an effects chain must have "
+                                       "a get method.")
+        self.chain = []
+        self.source = head
+
+    def append(self, effect):
+        """Add an effect to the chain."""
+        self.chain.append(effect)
+
+    def pop(self, index=None):
+        """Remove and return an effect from the chain."""
+        try:
+            if index is not None:
+                mod = self.chain.pop(index)
+            else:
+                mod = self.chain.pop()
+        except IndexError:
+            return None
+        return mod
+
+    def insert(self, index, effect):
+        """Insert a effect at the specified index, shifting to the right.
+
+        If index is larger than the current chain length, append.
+        """
+        self.chain.insert(index, effect)
+
+class MutatorZombieHerd(FXChain):
+    """Encapsulate a linear chain of Mutators."""
+
+    def get(self):
+        """Drive the zombie mutators to action."""
+        for zombie in self.chain:
+            zombie.mutate(self.source)
+        return self.source.get()
+
+class ModulationChain(FXChain):
+    """Encapsulate a linear chain of parameter manipulation."""
+
+    def get(self):
+        """Render the whole modulation chain."""
+        val = self.source.get()
+        for mod in self.chain:
+            val = mod.modulate(val)
+        return val
+
+# --- numeric helper functions ---
 
 def in_range(value, min_val=None, max_val=None):
     """Determine if a value is in the interval [min_val, max_val], inclusive.
@@ -229,5 +306,10 @@ def scale(value, min_val, max_val):
     """Scale a unit float to a specified range."""
     return (value * (max_val - min_val)) + min_val
 
+# --- error handling ---
+
 class PGError(Exception):
+    pass
+
+class ModulationChainError(PGError):
     pass
