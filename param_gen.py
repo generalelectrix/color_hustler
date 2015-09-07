@@ -145,7 +145,29 @@ class Function(ParameterGenerator):
         self.phase += (time.time() - self.last_called)/self.rate.period
         return self.func(self.phase, self.rate)
 
-class Twiddle(object):
+class StaticModifier(ParameterGenerator):
+    """Wrapper around a creater object to add a simple modification.
+
+    Some uses of this class are things like adding fixed offsets.
+    """
+    def __init__(self, creator, value, operation):
+        """Wrap a creator with a static value and operation.
+
+        Args:
+            creator: any object with a get method
+            value: the value to pass to operation
+            operation: a function that takes the creator's output as the first
+                argument and the value as the second argument
+        """
+        self.creator = creator
+        self.value = value
+        self.operation = operation
+
+    def get(self):
+        return self.operation(self.value, self.creator.get())
+
+
+class Twiddle(ParameterGenerator):
     """Wrapper around a creator object to twiddle a parameter when get is called."""
     def __init__(self, creator, param_gen, operation):
         """Wrap a creator with a parameter generator and pre-get operation.
