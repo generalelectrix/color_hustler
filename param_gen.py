@@ -1,7 +1,7 @@
 import math
 import time
 from random import Random
-from rate import Rate
+from rate import Rate, WallClock
 
 # --- parameter generators ---
 
@@ -113,12 +113,13 @@ class Diffusor(ParameterGenerator):
     def __init__(self, rate, seed=None):
         """Initialize a diffusor with a rate."""
         self.rate = rate
-        self.last_called = time.time()
+        self.wc = WallClock()
+        self.last_called = self.wc.time()
         self.rand_gen = GaussianRandom(0.0, 0.0, seed)
 
     def get(self):
         """Get the integrated diffusive shift."""
-        now = time.time()
+        now = self.wc.time()
         elapsed = now - self.last_called
         width = math.sqrt(elapsed / (4*self.rate.period))
         self.rand_gen.width = width
@@ -136,8 +137,9 @@ class Function(ParameterGenerator):
         """
         self.rate = rate
         self.func = func
+        self.wc = WallClock()
         self._phase = 0
-        self.last_called = time.time()
+        self.last_called = self.wc.now
 
     @property
     def phase(self):
@@ -148,7 +150,7 @@ class Function(ParameterGenerator):
         self._phase = phase % 1.0
 
     def get(self):
-        self.phase += (time.time() - self.last_called)/self.rate.period
+        self.phase += (self.wc.now - self.last_called)/self.rate.period
         return self.func(self.phase, self.rate)
 
 # --- modulators ---
