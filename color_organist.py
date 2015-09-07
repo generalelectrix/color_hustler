@@ -19,6 +19,8 @@ from Queue import Empty
 import multiprocessing as mp
 from multiprocessing import Process
 
+from contextlib import contextmanager
+
 import mido
 
 import param_gen as pgen
@@ -254,6 +256,13 @@ class MidiService(object):
         """Return a MidiClient connected to this service."""
         return MidiClient(self.ctrl_queue)
 
+    @contextmanager
+    def run(self):
+        """Run the midi service as a context manager."""
+        self.start()
+        yield
+        self.stop()
+
 class MidiClient(object):
     """Client-side interface to the midi service."""
     def __init__(self, msg_queue):
@@ -323,13 +332,12 @@ def test_co_functions_process():
 
     org_ctrl = ColorOrganistPuppeteer(organist)
 
-    try:
-        midi_service.start()
-        org_ctrl.start()
-        time.sleep(4.0)
-    finally:
-        org_ctrl.stop()
-        midi_service.stop()
+    with midi_service.run():
+        try:
+            org_ctrl.start()
+            time.sleep(4.0)
+        finally:
+            org_ctrl.stop()
 
 class InvalidBankError(Exception):
     pass
