@@ -61,7 +61,7 @@ def white():
 
 class HSBColorGenerator(object):
     """Random color generation."""
-
+    @named
     def __init__(self, h_gen, s_gen, b_gen):
         """Create a new random color generator."""
         self.h_gen = h_gen
@@ -79,6 +79,7 @@ class HSBColorGenerator(object):
 
 class ColorSwarm(object):
     """Agglomerate multiple color generators."""
+    @named
     def __init__(self, col_gens, random=False, seed=None):
         """Create a new ColorSwarm.
 

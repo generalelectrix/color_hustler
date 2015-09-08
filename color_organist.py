@@ -50,7 +50,7 @@ class ColorOrgan(object):
     with no sustain period, as that would be more than I want to deal with
     this late at night and this close to the show :)
     """
-
+    @named
     def __init__(self, name, port, ctrl_channel, bank_channel, banks=None):
         self.name = name
         self.port = port
@@ -92,6 +92,7 @@ class ColorOrgan(object):
 
 class ColorOrganist(object):
     """Class which uses a color stream to play a color organ."""
+    @named
     def __init__(self, note_trig, col_gen):
         self.note_trig = note_trig
         self.col_gen = col_gen
