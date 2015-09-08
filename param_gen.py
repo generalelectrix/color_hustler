@@ -247,19 +247,19 @@ class DynamicModulator(Modulator):
 # --- parameter generator mutators ---
 
 class Mutator(object):
-    """Base class for tools to mutate parameter generators when they are called."""
+    """Base class for tools to mutate other things once per frame."""
     def __init__(self):
         raise NotImplementedError("Inheriting classes must define their own "
                                   "constructor.")
-    def mutate(self, param_gen):
-        """Apply the mutation operation to a specified parameter generator."""
+    def mutate(self):
+        """Apply the mutation operation to the target."""
         raise NotImplementedError("Inheriting classes must override this method.")
 
 class Twiddler(Mutator):
     """Generic parameter twiddler."""
     @register_name
-    def __init__(self, twiddle_gen, operation):
-        """Create a new pre-get twiddler.
+    def __init__(self, twiddle_gen, operation, target):
+        """Create a new twiddler.
 
         Args:
             param_gen: a parameter generator creating the twiddle value
@@ -269,9 +269,10 @@ class Twiddler(Mutator):
         """
         self.twiddle_gen = twiddle_gen
         self.operation = operation
+        self.target = target
 
-    def mutate(self, param_gen):
-        self.operation(param_gen, self.twiddle_gen.get())
+    def mutate(self):
+        self.operation(self.target, self.twiddle_gen.get())
 
 # --- chains ---
 
@@ -307,15 +308,6 @@ class FXChain(object):
         If index is larger than the current chain length, append.
         """
         self.chain.insert(index, effect)
-
-class MutatorZombieHerd(FXChain):
-    """Encapsulate a linear chain of Mutators."""
-
-    def get(self):
-        """Drive the zombie mutators to action."""
-        for zombie in self.chain:
-            zombie.mutate(self.source)
-        return self.source.get()
 
 class ModulationChain(FXChain):
     """Encapsulate a linear chain of parameter manipulation."""

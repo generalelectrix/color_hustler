@@ -155,12 +155,12 @@ class Controller(cmd.Cmd):
         """
         resp_err, resp = self.handle_command('show', 'new', cmd)
 
-    def do_play(self, name):
-        """Command a named color organ to play."""
-        resp_err, resp = self.handle_command('show', 'play', name)
+    def do_run(self, name):
+        """Command a ColorOrganist or Mutator to run."""
+        resp_err, resp = self.handle_command('show', 'run', name)
 
     def do_stop(self, name):
-        """Command a named color organ to stop playing."""
+        """Command a ColorOrganist or Mutator to stop."""
         resp_err, resp = self.handle_command('show', 'stop', name)
 
     def do_script(self, script_filename):
@@ -173,7 +173,7 @@ class Controller(cmd.Cmd):
             with open(script_filename, 'r') as script:
                 command = ''
                 for n, line in enumerate(script):
-                    line = line.rstrip()
+                    line = line.rstrip().lstrip()
                     # allow comments
                     if not line.startswith('#'):
                         # enable multi-line using semicolon
@@ -199,6 +199,7 @@ class SavedShow(object):
         self.frame_clock = show.frame_clock
         self.render_trigger = show.render_trigger
         self.organists = show.organists
+        self.mutators = show.mutators
         self.name_registry = NameRegistry()
 
 class Show(object):
@@ -207,8 +208,9 @@ class Show(object):
         self.system_clock = SystemClock(name='system clock')
         self.render_trigger = Trigger(Rate(hz=framerate), 'system clock')
 
-        # use a set to ensure an organist is only playing once
+        # use sets to ensure items are only registered once
         self.organists = set()
+        self.mutators = set()
 
         self.cmd_queue = cmd_queue
         self.resp_queue = resp_queue
@@ -239,6 +241,7 @@ class Show(object):
             self.frame_clock = show.frame_clock
             self.render_trigger = show.render_trigger
             self.organists = show.organists
+            self.mutators = show.mutators
             nr = NameRegistry()
             nr.clear()
             nr.update(show.name_registry)
@@ -267,6 +270,8 @@ class Show(object):
                 return
             if self.render_trigger.trigger():
                 # render this frame to midi
+                for mutator in self.mutators:
+                    mutator.mutate()
 
                 # command the organists to play
                 for organist in self.organists:
@@ -346,20 +351,26 @@ class Show(object):
         elif cmd_type == 'new':
             # create a new named object, or really uhh execute arbitrary code lol
             exec(payload)
-        elif cmd_type == 'play':
-            # add an existing organ to the list of playing organs
-            organist = get(payload)
-            if not isinstance(organist, ColorOrganist):
-                raise TypeError("Received a play command for {}, which is of type"
-                                "{} but must be a color organist!".format(payload, type(organist)))
-            self.organists.add(organist)
+        elif cmd_type == 'run':
+            # register an organ or mutator with the runtime
+            item = get(payload)
+            if isinstance(item, ColorOrganist):
+                self.organists.add(item)
+            elif isinstance(item, Mutator):
+                self.mutators.add(item)
+            else:
+                raise TypeError("Received a run command for {}, which is of type"
+                "{} but must be and organist or mutator!".format(payload, type(item)))
         elif cmd_type == 'stop':
-            # stop a playing organ
-            organist = get(payload)
-            if not isinstance(organist, ColorOrganist):
+            # register an organ or mutator with the runtime
+            item = get(payload)
+            if isinstance(item, ColorOrganist):
+                self.organists.discard(item)
+            elif isinstance(item, Mutator):
+                self.mutators.discard(item)
+            else:
                 raise TypeError("Received a stop command for {}, which is of type"
-                                "{} but must be a color organ!".format(payload, type(organist)))
-            self.organists.discard(organist)
+                "{} but must be and organist or mutator!".format(payload, type(item)))
         return None
 
 class NoResponseFromShowError(Exception):

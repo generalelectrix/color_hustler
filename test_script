@@ -2,8 +2,7 @@ new ColorOrgan('test organ', 0, 1, {'linear': 0, 'all': 1}, name='organ')
 new test_hue_gen(Color(0.0,1.0,1.0), name='cyan hue gen')
 new IntegratingDiffusor(Diffusor(Rate(period=60.0)), name='diffusor')
 
-new MutatorZombieHerd(get('cyan hue gen'), name='mut chain')
-new ModulationChain(get('mut chain'), name='mod chain')
+new ModulationChain(get('cyan hue gen'), name='mod chain')
 new DynamicModulator(get('diffusor'), add_h, name='diffusor modulator')
 cmd mod chain.append(get('diffusor modulator'))
 
@@ -12,4 +11,14 @@ new DynamicModulator(get('offset generator'), add_h, name='offset modulator')
 cmd mod chain.append(get('offset modulator'))
 
 new Trigger(Rate(bpm=240.), name='note trig')
+
+new GaussianRandom(240, 120, name='trig jit')
+new Twiddler(get('trig jit'),;
+    lambda trig, val: setattr(trig,'rate',Rate(bpm=val)),;
+    get('note trig'), name='trig jit mut')
+
+run trig jit mut
+
 new ColorOrganist(get('organ'), get('note trig'), get('mod chain'), name='organist')
+
+run organist
