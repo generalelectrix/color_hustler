@@ -90,7 +90,7 @@ class ColorOrgan(object):
         self.port.send(on)
         self.port.send(off)
 
-def ColorOrganist(object):
+class ColorOrganist(object):
     """Class which uses a color stream to play a color organ."""
     def __init__(self, note_trig, col_gen):
         self.note_trig = note_trig
@@ -100,7 +100,7 @@ def ColorOrganist(object):
         """Play a color organ if the moment is right."""
         # should this organist play a note?
         if self.note_trig.trigger():
-            organ.send_color(col_gen.get())
+            organ.send_color(self.col_gen.get())
 
 def nice_color_gen_default(start_color):
     """Instance an aesthetically pleasing color generator.
@@ -167,7 +167,7 @@ def test_co_functions_process():
     ports = mido.get_output_names()
     p = mido.open_output(ports[0])
 
-    organ = ColorOrgan(p, 0, 1, {'linear': 0, 'all': 1})
+    organ = ColorOrgan('test organ', p, 0, 1, {'linear': 0, 'all': 1})
 
     #c_gen = nice_color_gen_default(cyan())
     c_gen = test_hue_gen(red())
@@ -185,17 +185,17 @@ def test_co_functions_process():
 
     note_trig = ClockTrigger(Rate(bpm=240.))
 
-    organist = ColorOrganist(organ, mod_chain, note_trig)
+    organist = ColorOrganist(note_trig, mod_chain)
 
-    org_ctrl = ColorOrganistPuppeteer(organist)
-
-    with midi_service.run():
-        try:
-            org_ctrl.start()
-            org_ctrl.command('select_bank', 'linear')
-            time.sleep(60.0)
-        finally:
-            org_ctrl.stop()
+    wc = WallClock()
+    wc.tick()
+    now = wc.time()
+    while True:
+        organist.play(organ)
+        time.sleep(0.02)
+        wc.tick()
+        if wc.time() > now + 20.0:
+            break
 
 
 class Application(object):
