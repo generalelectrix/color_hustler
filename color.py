@@ -1,6 +1,7 @@
 from random import Random
 
 from name_registry import register_name
+import param_gen as pgen
 
 # color organ style HSB color
 
@@ -109,7 +110,27 @@ class ColorSwarm(object):
             col = self.gens[self.next].get()
             return col
 
+def nice_color_gen_default(start_color, name=None):
+    """Instance an aesthetically pleasing color generator.
 
+    start_color is an optional color to start the generator with.  At the moment,
+    this just sets the initial center of the hue generator.
+
+    Hue is driven by a gaussian with width of 0.1.
+    Saturation is driven by a gaussian centered at 1.0 with width 0.2.
+    Brightness is driven by a gaussian centered at 1.0 with width 0.2.
+    """
+    h_gen = pgen.GaussianRandom(start_color.hue, 0.1)
+    s_gen = pgen.GaussianRandom(1.0, 0.2)
+    b_gen = pgen.GaussianRandom(1.0, 0.2)
+    return HSBColorGenerator(h_gen, s_gen, b_gen, name=name)
+
+def test_hue_gen(start_color, name=None):
+    """Return a color generator that produces a constant color."""
+    h_gen = pgen.Constant(start_color.hue)
+    s_gen = pgen.Constant(1.0)
+    b_gen = pgen.Constant(1.0)
+    return HSBColorGenerator(h_gen, s_gen, b_gen, name=name)
 
 
 

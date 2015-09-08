@@ -1,28 +1,6 @@
 import time
 
-from name_registry import register_name
-
-class WallClock(object):
-    """Source of universal wall time.  Implemented as a singleton.
-
-    This technique ensures that any client that needs to get the current time
-    can simply instance WallClock and get the same value from now() as every
-    other client making a call in the same frame.  WallClock should tick at the
-    beginning of every frame render.
-    """
-    __instance = None
-    def __new__(cls):
-        if WallClock.__instance is None:
-            WallClock.__instance = object.__new__(cls)
-            WallClock.__instance.now = time.time()
-        return WallClock.__instance
-
-    def tick(self):
-        self.now = time.time()
-
-    def time(self):
-        return self.now
-
+from name_registry import register_name, get
 
 class Rate(object):
     """Helper class for working with rates."""
@@ -58,22 +36,40 @@ class Rate(object):
     def period(self, period):
         self.hz = 1.0 / period
 
+class FrameClock(object):
+    """Source of universal frame time."""
+    @register_name
+    def __init__(self):
+        # don't set the initial time without ticking once
+        self.now = None
+
+    def tick(self):
+        self.now = time.time()
+
+    def time(self):
+        return self.now
+
+class SystemClock(object):
+    """Helper object to enable pickling."""
+    @register_name
+    def __init__(self):
+        pass
+    def time(self):
+        return time.time()
+
 class ClockTrigger(object):
     """Polling-based scheduling of an operation."""
     @register_name
-    def __init__(self, rate, absolute_time=False):
+    def __init__(self, rate, clock_name='frame clock'):
         """Create a new ClockTrigger.
 
         This trigger will initially be in a state where it will fire immediately
         when first polled.
 
-        If absolute_time=True, use the true wall time and not the frame time.
+        Uses the name registration system to get the clock.
         """
         self.rate = rate
-        if not absolute_time:
-            self.clock = WallClock()
-        else:
-            self.clock = time
+        self.clock = get(clock_name)
         self.last_trig = self.clock.time() - self.period
 
     @property

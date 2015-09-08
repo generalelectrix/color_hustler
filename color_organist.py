@@ -56,7 +56,6 @@ class ColorOrgan(object):
     """
     @register_name
     def __init__(self, name, ctrl_channel, bank_channel, banks=None):
-        self.port = MidiPort()
         self.ctrl_channel = ctrl_channel
         self.bank_channel = bank_channel
         if banks is None:
@@ -76,9 +75,9 @@ class ColorOrgan(object):
                                value=saturation)
         on_msg, off_msg = note_onoff_pair(channel=self.ctrl_channel, note=note, velocity=velocity)
 
-        self.port.send(sat_msg)
-        self.port.send(on_msg)
-        self.port.send(off_msg)
+        MidiPort().send(sat_msg)
+        MidiPort().send(on_msg)
+        MidiPort().send(off_msg)
 
     def select_bank(self, bank):
         """Select a named bank."""
@@ -90,8 +89,8 @@ class ColorOrgan(object):
         on, off = note_onoff_pair(channel=self.bank_channel,
                                   note=bank_note,
                                   velocity=127)
-        self.port.send(on)
-        self.port.send(off)
+        MidiPort().send(on)
+        MidiPort().send(off)
 
 class ColorOrganist(object):
     """Class which uses a color stream to play a color organ."""
@@ -128,80 +127,6 @@ def test_hue_gen(start_color, name=None):
     s_gen = pgen.Constant(1.0)
     b_gen = pgen.Constant(1.0)
     return HSBColorGenerator(h_gen, s_gen, b_gen, name=name)
-
-def test_color_organist_functions_local():
-
-    import time
-
-    p = mido.open_output()
-
-    co = ColorOrgan(p, 0, 1, {'linear': 0, 'all': 1})
-
-    co.select_bank('linear')
-
-    for _ in xrange(8):
-        co.send_color(red())
-        time.sleep(0.3)
-
-    co.select_bank('all')
-    co.send_color(cyan())
-    time.sleep(1.0)
-    co.send_color(magenta())
-    time.sleep(1.0)
-    co.send_color(white())
-
-    # check random color generation
-    # full brightness, unform random hue and sat
-    h_gen = pgen.UniformRandom(0.5, 0.5, name='hgen')
-    s_gen = pgen.UniformRandom(0.5, 0.5, name='sgen')
-    b_gen = pgen.Constant(1.0, name='bgen')
-
-    c_gen = HSBColorGenerator(h_gen, s_gen, b_gen, name='cgen')
-
-    co.select_bank('linear')
-
-    for _ in xrange(24):
-        col = c_gen.get()
-        co.send_color(col)
-        time.sleep(0.3)
-
-def test_co_functions_process():
-
-    import time
-
-    ports = mido.get_output_names()
-    p = mido.open_output(ports[0])
-
-    organ = ColorOrgan('test organ', p, 0, 1, {'linear': 0, 'all': 1}, name='organ')
-
-    #c_gen = nice_color_gen_default(cyan())
-    c_gen = test_hue_gen(red())
-
-    def add_to_hue(cgen, mod):
-        new_center = pgen.wrap(cgen.h_gen.center + mod, 0.0, 1.0)
-        cgen.h_gen.center = new_center
-
-    diffusor = pgen.Diffusor(Rate(period=60.0), name='diffusor')
-
-    mutator_chain = pgen.MutatorZombieHerd(c_gen, name='mut_chain')
-    mutator_chain.append(pgen.Twiddler(diffusor, add_to_hue, name='diffusor twiddler'))
-
-    mod_chain = pgen.ModulationChain(mutator_chain, name='mod_chain')
-
-    note_trig = ClockTrigger(Rate(bpm=240.), 'note_trig')
-
-    organist = ColorOrganist(note_trig, mod_chain, name='organist')
-
-    wc = WallClock()
-    wc.tick()
-    now = wc.time()
-    print NameRegistry()
-    while True:
-        organist.play(organ)
-        time.sleep(0.02)
-        wc.tick()
-        if wc.time() > now + 20.0:
-            break
 
 class InvalidBankError(Exception):
     pass

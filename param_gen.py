@@ -2,8 +2,8 @@ import math
 import time
 from random import Random
 
-from rate import Rate, WallClock
-from name_registry import register_name
+from rate import Rate
+from name_registry import register_name, get
 
 # --- parameter generators ---
 
@@ -116,16 +116,16 @@ class Diffusor(ParameterGenerator):
     is defined to be 1.0, implying what amounts to a completely random shift.
     """
     @register_name
-    def __init__(self, rate, seed=None):
+    def __init__(self, rate, clock_name='frame clock', seed=None):
         """Initialize a diffusor with a rate."""
         self.rate = rate
-        self.wc = WallClock()
-        self.last_called = self.wc.time()
+        self.clock = get(clock_name)
+        self.last_called = self.clock.time()
         self.rand_gen = GaussianRandom(0.0, 0.0, seed)
 
     def get(self):
         """Get the integrated diffusive shift."""
-        now = self.wc.time()
+        now = self.clock.time()
         elapsed = now - self.last_called
         width = math.sqrt(elapsed / (4*self.rate.period))
         self.rand_gen.width = width
@@ -135,7 +135,7 @@ class Diffusor(ParameterGenerator):
 class Function(ParameterGenerator):
     """Provide the value of a temporal, periodic function."""
     @register_name
-    def __init__(self, rate, func):
+    def __init__(self, rate, func, clock_name='frame clock'):
         """Create a function generator with a specified function.
 
         func should take two positional arguments: (phase, rate)
@@ -144,7 +144,7 @@ class Function(ParameterGenerator):
         """
         self.rate = rate
         self.func = func
-        self.wc = WallClock()
+        self.clock = get(clock_name)
         self._phase = 0
         self.last_called = self.wc.now
 
@@ -157,7 +157,7 @@ class Function(ParameterGenerator):
         self._phase = phase % 1.0
 
     def get(self):
-        self.phase += (self.wc.now - self.last_called)/self.rate.period
+        self.phase += (self.clock.time() - self.last_called)/self.rate.period
         return self.func(self.phase, self.rate)
 
 # --- modulators ---
@@ -208,7 +208,7 @@ class Twiddler(Mutator):
     """Generic parameter twiddler."""
     @register_name
     def __init__(self, twiddle_gen, operation):
-        """Wrap a creator with a parameter generator and pre-get operation.
+        """Create a new pre-get twiddler.
 
         Args:
             param_gen: a parameter generator creating the twiddle value
