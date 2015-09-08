@@ -271,7 +271,7 @@ class Controller(cmd.Cmd):
 
     def do_quit(self, _):
         """Quit the application."""
-        resp_err, resp = handle_command('appl', 'quit')
+        resp_err, resp = self.handle_command('appl', 'quit')
         if not resp_err:
             print resp
             self.show_process.join()
@@ -281,19 +281,19 @@ class Controller(cmd.Cmd):
         """Save the current state of the show.  Provide the show name.
         If the named show already exists, it will be overwritten.
         """
-        resp_err, resp = handle_command('appl', 'save', show_name)
+        resp_err, resp = self.handle_command('appl', 'save', show_name)
         if not resp_err:
             print "Saved show {}".format(show_name)
 
     def do_load(self, show_name):
         """Load a named show."""
-        resp_err, resp = handle_command('appl', 'load', show_name)
+        resp_err, resp = self.handle_command('appl', 'load', show_name)
         if not resp_err:
             print "Loaded show {}".format(show_name)
 
     def do_list(self, _):
         """List all of the named entities in the current show."""
-        resp_err, resp = handle_command('show', 'list')
+        resp_err, resp = self.handle_command('show', 'list')
         if not resp_err:
             print resp
 
@@ -313,22 +313,22 @@ class Controller(cmd.Cmd):
             print "An exception ocurred during command parsing: {}".format(err)
             return
         else:
-            handle_command('show', 'cmd', (name, cmd))
+            self.handle_command('show', 'cmd', (name, cmd))
 
     def do_new(self, cmd):
         """Create a new entity in the show environment.
 
         Realistically this just eval's whatever you give it.
         """
-        handle_command('show', 'new', cmd)
+        self.handle_command('show', 'new', cmd)
 
     def do_play(self, name):
         """Command a named color organ to play."""
-        handle_command('show', 'play', name)
+        self.handle_command('show', 'play', name)
 
     def do_stop(self, name):
         """Command a named color organ to stop playing."""
-        handle_command('show', 'stop', name)
+        self.handle_command('show', 'stop', name)
 
 class SavedShow(object):
     """Encapsulate the data required to save and load a show."""
@@ -408,7 +408,6 @@ class Show(object):
             else:
                 while True:
                     time_until_trig = self.render_trigger.time_until_trig()
-
                     # if it is time to trigger, stop the command loop
                     if time_until_trig <= 0.0:
                         break
@@ -425,10 +424,13 @@ class Show(object):
                         err = False
                         try:
                             cmd_type, payload = cmd
-                            if cmd_type == 'application':
+                            if cmd_type == 'appl':
                                 resp = self.process_appl_cmd(payload)
                             elif cmd_type == 'show':
                                 resp = self.process_show_cmd(payload)
+                            else:
+                                err = True
+                                resp = "Show received nknown command type {}".format(cmd_type)
                         except Exception:
                             err = True
                             resp = traceback.format_exc()
