@@ -330,6 +330,19 @@ class Controller(cmd.Cmd):
         """Command a named color organ to stop playing."""
         self.handle_command('show', 'stop', name)
 
+    def do_script(self, script_filename):
+        """Run a script of commands using this interface.
+
+        Provide this command with the path to the script of commands to be run.
+        """
+        try:
+            with open(script_filename, 'r') as script:
+                for line in script:
+                    self.onecmd(line)
+        except Exception as err:
+            print "An error occurred during script execution:\n"
+            print err
+
 class SavedShow(object):
     """Encapsulate the data required to save and load a show."""
     def __init__(self, show):
