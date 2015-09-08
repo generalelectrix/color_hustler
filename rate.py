@@ -1,6 +1,6 @@
 import time
 
-from name_registry import named
+from name_registry import register_name
 
 class WallClock(object):
     """Source of universal wall time.  Implemented as a singleton.
@@ -60,6 +60,7 @@ class Rate(object):
 
 class ClockTrigger(object):
     """Polling-based scheduling of an operation."""
+    @register_name
     def __init__(self, rate, absolute_time=False):
         """Create a new ClockTrigger.
 
@@ -112,3 +113,6 @@ class ClockTrigger(object):
             else:
                 # wait 95% of the remaining time and run again
                 time.sleep(0.95*time_until_trig)
+
+class RateError(Exception):
+    pass

@@ -11,7 +11,7 @@ class NameRegistry(dict):
             NameRegistry.__instance = {}
         return NameRegistry.__instance
 
-def named(object_constructor):
+def register_name(object_constructor):
     @wraps(object_constructor)
     def add_name_to_registry(self, *args, **kwargs):
         if 'name' in kwargs:
@@ -19,3 +19,11 @@ def named(object_constructor):
             del kwargs['name']
         object_constructor(self, *args, **kwargs)
     return add_name_to_registry
+
+def get(name):
+    """Get a named entity from the registry.
+
+    Just a convenient shorthand for NameRegistry()[name]
+    """
+    return NameRegistry()[name]
+

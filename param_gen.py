@@ -3,7 +3,7 @@ import time
 from random import Random
 
 from rate import Rate, WallClock
-from name_registry import named
+from name_registry import register_name
 
 # --- parameter generators ---
 
@@ -44,7 +44,7 @@ class ParameterGenerator(object):
 
 class Constant(ParameterGenerator):
     """Helper class to generate constant values."""
-    @named
+    @register_name
     def __init__(self, center):
         self.center = center
 
@@ -53,7 +53,7 @@ class Constant(ParameterGenerator):
 
 class UniformRandom(ParameterGenerator):
     """Generate unformly-distributed random numbers."""
-    @named
+    @register_name
     def __init__(self, center, width, seed=None):
         """Create a new uniform random number generator.
 
@@ -84,7 +84,7 @@ class UniformRandom(ParameterGenerator):
 
 class GaussianRandom(ParameterGenerator):
     """Generate gaussian-distributed random numbers."""
-    @named
+    @register_name
     def __init__(self, center, width, seed=None):
         """Create a new gaussian random number generator.
 
@@ -115,7 +115,7 @@ class Diffusor(ParameterGenerator):
     After one period given by rate, the full-width half-max of this distribution
     is defined to be 1.0, implying what amounts to a completely random shift.
     """
-    @named
+    @register_name
     def __init__(self, rate, seed=None):
         """Initialize a diffusor with a rate."""
         self.rate = rate
@@ -134,7 +134,7 @@ class Diffusor(ParameterGenerator):
 
 class Function(ParameterGenerator):
     """Provide the value of a temporal, periodic function."""
-    @named
+    @register_name
     def __init__(self, rate, func):
         """Create a function generator with a specified function.
 
@@ -164,7 +164,7 @@ class Function(ParameterGenerator):
 
 class Modulator(object):
     """Base class for tools to modulate a parameter stream."""
-    @named
+    @register_name
     def __init__(self):
         raise NotImplementedError("Inheriting classes must define their own "
                                   "constructor.")
@@ -177,7 +177,7 @@ class StaticModifier(Modulator):
 
     Some uses of this class are things like adding fixed offsets.
     """
-    @named
+    @register_name
     def __init__(self, value, operation):
         """Create a modifier with a static value and operation.
 
@@ -206,7 +206,7 @@ class Mutator(object):
 
 class Twiddler(Mutator):
     """Generic parameter twiddler."""
-    @named
+    @register_name
     def __init__(self, twiddle_gen, operation):
         """Wrap a creator with a parameter generator and pre-get operation.
 
@@ -226,7 +226,7 @@ class Twiddler(Mutator):
 
 class FXChain(ParameterGenerator):
     """Base class for linear effects chains."""
-    @named
+    @register_name
     def __init__(self, head):
         """Initialize a linear effects chain with a source."""
         if not hasattr(head, 'get'):
