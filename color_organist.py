@@ -40,7 +40,7 @@ class MidiPort(object):
     def __new__(cls, port_name=None):
         """Open a named port."""
         if MidiPort.__instance is None:
-            if port_name is not Note:
+            if port_name is not None:
                 MidiPort.__instance = mido.open_output(port_name)
             else:
                 MidiPort.__instance = mido.open_output()
@@ -213,6 +213,8 @@ def test_co_functions_process():
         if wc.time() > now + 20.0:
             break
 
+
+
 class Controller(cmd.Cmd):
     # command format: (command type, payload)
     # command types:
@@ -230,6 +232,7 @@ class Controller(cmd.Cmd):
     #           ('play', organist name)
     #           ('stop', organist name)
     def __init__(self):
+        cmd.Cmd.__init__(self)
         print "Color Organist"
         port = MidiPort()
         print "Using midi port {}.".format(port)
@@ -242,7 +245,7 @@ class Controller(cmd.Cmd):
         print "Starting empty show."
         self.cmd_queue = Queue()
         self.resp_queue = Queue()
-        show = Show(60., cmd_queue, resp_queue)
+        show = Show(60., self.cmd_queue, self.resp_queue)
         self.show_process = Process(target=show.run)
         self.show_process.start()
         print "Show is running."
@@ -251,73 +254,81 @@ class Controller(cmd.Cmd):
     def emptyline(self):
         pass
 
-    def issue_command(self, cmd_type, cmd, payload=None, timeout=1.0):
-        """Issue a command to the show application and return the response.
-
-        Raises NoResponseFromShowError if timeout is exceeded.
+    def handle_command(self, cmd_type, cmd, payload=None, timeout=1.0):
+        """Issue a command to the show application and handle the response.
         """
         self.cmd_queue.put((cmd_type, (cmd, payload)))
         try:
-            resp = self.resp_queue.get(timeout=timeout)
+            (resp_err, resp) = self.resp_queue.get(timeout=timeout)
         except Empty:
-            raise NoResponseFromShowError(cmd)
-        return resp
+            print "The show did not response to the command {}".format(command.__name__)
+            return (True, None)
+        else:
+            if resp_err:
+                print "An error occurred in response to the command {}:".format(command.__name__)
+                print resp
+            return (resp_err, resp)
 
-    @handle_command_error
-    def do_quit(self):
-        resp = issue_command('appl', 'quit')
-        if not resp[0]:
-            print resp[1]
+    def do_quit(self, _):
+        """Quit the application."""
+        resp_err, resp = handle_command('appl', 'quit')
+        if not resp_err:
+            print resp
             self.show_process.join()
             quit()
 
-    @handle_command_error
     def do_save(self, show_name):
-        resp = issue_command('appl', 'save', show_name)
-        if not resp[0]:
+        """Save the current state of the show.  Provide the show name.
+        If the named show already exists, it will be overwritten.
+        """
+        resp_err, resp = handle_command('appl', 'save', show_name)
+        if not resp_err:
             print "Saved show {}".format(show_name)
-        return resp
 
-    @handle_command_error
     def do_load(self, show_name):
-        resp = issue_command('appl', 'load', show_name)
-        if not resp[0]:
+        """Load a named show."""
+        resp_err, resp = handle_command('appl', 'load', show_name)
+        if not resp_err:
             print "Loaded show {}".format(show_name)
-        return resp
 
-    @handle_command_error
-    def do_list(self):
-        resp = issue_command('show', 'list')
-        if not resp[0]:
-            print resp[1]
-        return resp
-
-    @handle_command_error
-    def do_cmd(self, name, cmd):
-        return issue_command('show', 'cmd', (name, cmd))
-
-    @handle_command_error
-    def do_new(self, cmd):
-        return issue_command('show', 'new', cmd)
-
-    @handle_command_error
-    def do_play(self, name):
-        return issue_command('show', 'play', name)
-
-    @handle_command_error
-    def do_stop(self, name):
-        return issue_command('show', 'stop', name)
-
-def handle_command_error(command):
-    @wraps(command)
-    def wrapped_command(self, *args, **kwargs):
-        try:
-            (resp_err, resp) = command(self, *args, **kwargs)
-        except NoResponseFromShowError as err:
-            print "The show did not response to the command {}".format(command.__name__)
-        if resp_err:
-            print "An error occurred in response to the command {}:".format(command.__name__)
+    def do_list(self, _):
+        """List all of the named entities in the current show."""
+        resp_err, resp = handle_command('show', 'list')
+        if not resp_err:
             print resp
+
+    def do_cmd(self, name_and_command):
+        """Perform an action on a named entity.
+
+        The format of this command should be name:command_expression which will be evaluated
+        in the show environment as name.command_expression
+        """
+        pieces = name_and_command.split(':')
+        try:
+            # pull off the name
+            name = pieces[0]
+            # rejoin the rest of the command
+            cmd = ':'.join(pieces[1:])
+        except Exception as err:
+            print "An exception ocurred during command parsing: {}".format(err)
+            return
+        else:
+            handle_command('show', 'cmd', (name, cmd))
+
+    def do_new(self, cmd):
+        """Create a new entity in the show environment.
+
+        Realistically this just eval's whatever you give it.
+        """
+        handle_command('show', 'new', cmd)
+
+    def do_play(self, name):
+        """Command a named color organ to play."""
+        handle_command('show', 'play', name)
+
+    def do_stop(self, name):
+        """Command a named color organ to stop playing."""
+        handle_command('show', 'stop', name)
 
 class SavedShow(object):
     """Encapsulate the data required to save and load a show."""
@@ -382,13 +393,13 @@ class Show(object):
         # application loop
         while True:
             # if we have been instructed to quit, do so
-            if self.running = False:
+            if not self.running:
                 return
-            if render_trigger.trigger():
+            if self.render_trigger.trigger():
                 # render this frame to midi
 
                 # command the organs to play
-                for organ in organs:
+                for organ in self.organs:
                     organ.play()
 
                 # update the wall clock for the next frame
@@ -396,7 +407,7 @@ class Show(object):
 
             else:
                 while True:
-                    time_until_trig = render_trigger.time_until_trig()
+                    time_until_trig = self.render_trigger.time_until_trig()
 
                     # if it is time to trigger, stop the command loop
                     if time_until_trig <= 0.0:
@@ -507,7 +518,8 @@ class CorruptShowError(ShowLoadError):
 
 if __name__ == '__main__':
     #test_color_organist_functions_local()
-    test_co_functions_process()
+    #test_co_functions_process()
+    Controller()
 
 
 
