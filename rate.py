@@ -1,5 +1,7 @@
 import time
 
+from name_registry import named
+
 class WallClock(object):
     """Source of universal wall time.  Implemented as a singleton.
 

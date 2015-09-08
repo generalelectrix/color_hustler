@@ -1,7 +1,9 @@
 import math
 import time
 from random import Random
+
 from rate import Rate, WallClock
+from name_registry import named
 
 # --- parameter generators ---
 

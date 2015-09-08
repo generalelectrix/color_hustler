@@ -27,6 +27,7 @@ import param_gen as pgen
 from color import Color, HSBColorGenerator
 from color import red, green, blue, cyan, magenta, yellow
 from rate import Rate, ClockTrigger, WallClock
+from name_registry import *
 
 # control mappings
 CC_SAT = 11

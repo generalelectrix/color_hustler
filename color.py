@@ -1,5 +1,7 @@
 from random import Random
 
+from name_registry import named
+
 # color organ style HSB color
 
 class Color(object):
