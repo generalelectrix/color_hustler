@@ -51,6 +51,26 @@ class Constant(ParameterGenerator):
     def get(self):
         return self.center
 
+class ConstantList(ParameterGenerator):
+    """Choose from a list of constant values."""
+    @register_name
+    def __init__(self, values, random=False, seed=None):
+        self.values = values
+        self.random = random
+        self.index = 0
+        self.rand_gen = Random()
+        if seed is not None:
+            self.rand_gen.seed(seed)
+
+    def get(self):
+        if self.random:
+            index = self.rand_gen.randint(0, len(self.values)-1)
+            return self.values[index]
+        else:
+            self.index = (self.index + 1) % len(self.values)
+            return self.values[self.index]
+
+
 class UniformRandom(ParameterGenerator):
     """Generate unformly-distributed random numbers."""
     @register_name
@@ -132,6 +152,19 @@ class Diffusor(ParameterGenerator):
         self.last_called = now
         return self.rand_gen.get()
 
+class IntegratingDiffusor(ParameterGenerator):
+    """Integrate the output of a Diffusor for use as a modulator."""
+    @register_name
+    def __init__(self, diffusor):
+        print diffusor
+        self.diff = diffusor
+        self.accum = 0
+
+    def get(self):
+        self.accum += self.diff.get()
+        return self.accum
+
+
 class Function(ParameterGenerator):
     """Provide the value of a temporal, periodic function."""
     @register_name
@@ -172,7 +205,7 @@ class Modulator(object):
         """Apply the modulation operation."""
         raise NotImplementedError("Inheriting classes must override this method.")
 
-class StaticModifier(Modulator):
+class StaticModulator(Modulator):
     """Use a fixed value to modulate a signal.
 
     Some uses of this class are things like adding fixed offsets.
@@ -183,17 +216,17 @@ class StaticModifier(Modulator):
 
         Args:
             value: the value to pass to operation
-            operation: a function that takes the fixed value as the first
-                argument and a signal value as the second argument and returns the
+            operation: a function that takes the signal as the first
+                argument and the fixed value as the second argument and returns the
                 modulated value.
         """
         self.value = value
         self.operation = operation
 
     def modulate(self, signal):
-        return self.operation(self.value, signal)
+        return self.operation(signal, self.value)
 
-class DynamicModifier(Modulator):
+class DynamicModulator(Modulator):
     """Use another parameter generator to modulate a signal."""
     @register_name
     def __init__(self, pgen, operation):
@@ -201,15 +234,15 @@ class DynamicModifier(Modulator):
 
         Args:
             pgen: the parameter generator use
-            operation: a function that takes the fixed value as the first
-                argument and a signal value as the second argument and returns the
+            operation: a function that takes a signal value as the first
+                argument and the fixed value as the second argument and returns the
                 modulated value.
         """
         self.pgen = pgen
         self.operation = operation
 
     def modulate(self, signal):
-        return self.operation(pgen.get(), signal)
+        return self.operation(signal, self.pgen.get())
 
 # --- parameter generator mutators ---
 

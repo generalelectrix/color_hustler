@@ -28,10 +28,6 @@ class Color(object):
     def __ne__(self, other):
         return not self == other
 
-    def __add__(self, other):
-        if isinstance(other, Color):
-            return
-
     @property
     def h(self):
         return self._hue
@@ -55,6 +51,35 @@ class Color(object):
     @b.setter
     def b(self, val):
         self._brightness = clamp(val, 0.0, 1.0)
+
+def add_h(color, value):
+    return Color((color.h + value) % 1.0, color.s, color.b)
+
+def add_s(color, value):
+    return Color(color.h, color.s + value)
+
+def mult_s(color, value):
+    return Color(color.h, color.s * value, color.b)
+
+def div_s(color, value):
+    if value == 0.0:
+        # might get zero from a rounding error
+        # return max
+        return Color(color.h, 1.0, color.b)
+    return Color(color.h, color.s / value, color.b)
+
+def add_b(color, value):
+    return Color(color.h, color.s, color.b + value)
+
+def mult_b(color, value):
+    return Color(color.h, color.s, color.b * value)
+
+def div_b(color, value):
+    if value == 0.0:
+        # might get zero from a rounding error
+        # return max
+        return Color(color.h, color.s, 1.0)
+    return Color(color.h, color.s, color.b / value)
 
 # possibly useful color constants
 
