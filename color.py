@@ -5,16 +5,19 @@ import param_gen as pgen
 
 # color organ style HSB color
 
+def clamp(val, min_val, max_val):
+    return min(max(min_val, val), max_val)
+
 class Color(object):
     """Roll my own HSB color to match how the color organ works."""
     def __init__(self, hue, saturation, brightness):
         """HSB on unit float intervals."""
-        self.hue = hue
-        self.saturation = saturation
-        self.brightness = brightness
+        self._hue = clamp(hue, 0.0, 1.0)
+        self._saturation = clamp(saturation, 0.0, 1.0)
+        self._brightness = clamp(brightness, 0.0, 1.0)
 
     def __str__(self):
-        return "Color; (h,s,b) = ({},{},{})".format(self.hue, self.saturation, self.brightness)
+        return "Color; (h,s,b) = ({},{},{})".format(self.h, self.s, self.b)
 
     def __eq__(self, other):
         if isinstance(other, Color):
@@ -25,15 +28,33 @@ class Color(object):
     def __ne__(self, other):
         return not self == other
 
+    def __add__(self, other):
+        if isinstance(other, Color):
+            return
+
     @property
     def h(self):
-        return self.hue
+        return self._hue
+
+    @h.setter
+    def h(self, val):
+        self._hue = clamp(val, 0.0, 1.0)
+
     @property
     def s(self):
-        return self.saturation
+        return self._saturation
+
+    @s.setter
+    def s(self, val):
+        self._saturation = clamp(val, 0.0, 1.0)
+
     @property
     def b(self):
-        return self.brightness
+        return self._brightness
+
+    @b.setter
+    def b(self, val):
+        self._brightness = clamp(val, 0.0, 1.0)
 
 # possibly useful color constants
 
@@ -61,8 +82,15 @@ def black():
 def white():
     return Color(0.0, 0.0, 1.0)
 
+class ColorGenerator(object):
+    """Base class for color generators.
 
-class HSBColorGenerator(object):
+    Really just used to allow type filtering.
+    """
+    def __init__(self):
+        raise NotImplementedError("Inheriting classes must override this constructor.")
+
+class HSBColorGenerator(ColorGenerator):
     """Random color generation."""
     @register_name
     def __init__(self, h_gen, s_gen, b_gen):
@@ -80,7 +108,7 @@ class HSBColorGenerator(object):
         return Color(h_val, s_val, b_val)
 
 
-class ColorSwarm(object):
+class ColorSwarm(ColorGenerator):
     """Agglomerate multiple color generators."""
     @register_name
     def __init__(self, col_gens, random=False, seed=None):
@@ -120,14 +148,14 @@ def nice_color_gen_default(start_color, name=None):
     Saturation is driven by a gaussian centered at 1.0 with width 0.2.
     Brightness is driven by a gaussian centered at 1.0 with width 0.2.
     """
-    h_gen = pgen.GaussianRandom(start_color.hue, 0.1)
+    h_gen = pgen.GaussianRandom(start_color.h, 0.1)
     s_gen = pgen.GaussianRandom(1.0, 0.2)
     b_gen = pgen.GaussianRandom(1.0, 0.2)
     return HSBColorGenerator(h_gen, s_gen, b_gen, name=name)
 
 def test_hue_gen(start_color, name=None):
     """Return a color generator that produces a constant color."""
-    h_gen = pgen.Constant(start_color.hue)
+    h_gen = pgen.Constant(start_color.h)
     s_gen = pgen.Constant(1.0)
     b_gen = pgen.Constant(1.0)
     return HSBColorGenerator(h_gen, s_gen, b_gen, name=name)

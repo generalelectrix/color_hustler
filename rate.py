@@ -9,7 +9,7 @@ class Rate(object):
 
         Must supply exactly one named optional argument {bpm, hz, period}.
         """
-        self.hz = None
+        self._hz = None
 
         if bpm is not None:
             self.bpm = bpm
@@ -21,12 +21,20 @@ class Rate(object):
             raise RateError("Must supply at least one argument to Rate().")
 
     @property
+    def hz(self):
+        return self._hz
+
+    @hz.setter
+    def hz(self, hz):
+        self._hz = float(hz)
+
+    @property
     def bpm(self):
         return self.hz * 60.0
 
     @bpm.setter
     def bpm(self, bpm):
-        self.hz = bpm / 60.0
+        self.hz = float(bpm) / 60.0
 
     @property
     def period(self):
@@ -34,7 +42,7 @@ class Rate(object):
 
     @period.setter
     def period(self, period):
-        self.hz = 1.0 / period
+        self.hz = 1.0 / float(period)
 
 class FrameClock(object):
     """Source of universal frame time."""
@@ -57,11 +65,11 @@ class SystemClock(object):
     def time(self):
         return time.time()
 
-class ClockTrigger(object):
+class Trigger(object):
     """Polling-based scheduling of an operation."""
     @register_name
     def __init__(self, rate, clock_name='frame clock'):
-        """Create a new ClockTrigger.
+        """Create a new Trigger.
 
         This trigger will initially be in a state where it will fire immediately
         when first polled.

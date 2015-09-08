@@ -193,6 +193,24 @@ class StaticModifier(Modulator):
     def modulate(self, signal):
         return self.operation(self.value, signal)
 
+class DynamicModifier(Modulator):
+    """Use another parameter generator to modulate a signal."""
+    @register_name
+    def __init__(self, pgen, operation):
+        """Create a modifier with a dynamic value and operation.
+
+        Args:
+            pgen: the parameter generator use
+            operation: a function that takes the fixed value as the first
+                argument and a signal value as the second argument and returns the
+                modulated value.
+        """
+        self.pgen = pgen
+        self.operation = operation
+
+    def modulate(self, signal):
+        return self.operation(pgen.get(), signal)
+
 # --- parameter generator mutators ---
 
 class Mutator(object):
@@ -224,7 +242,7 @@ class Twiddler(Mutator):
 
 # --- chains ---
 
-class FXChain(ParameterGenerator):
+class FXChain(object):
     """Base class for linear effects chains."""
     @register_name
     def __init__(self, head):
