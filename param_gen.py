@@ -5,6 +5,67 @@ from random import Random
 from rate import Rate
 from name_registry import register_name, get
 
+# --- numeric helper functions ---
+
+def in_range(value, min_val=None, max_val=None):
+    """Determine if a value is in the interval [min_val, max_val], inclusive.
+
+    Returns the integer 0 if the value is in range, +1 if it is above the max,
+    and -1 if it is below the min.
+    """
+    in_range = 0
+    if min_val is not None and value < min_val:
+        in_range = -1
+    elif max_val is not None and value > max_val:
+        in_range = 1
+    return in_range
+
+def clamp(value, min_val=None, max_val=None):
+    val_in_range = in_range(value, min_val, max_val)
+    if val_in_range == 0:
+        return
+    elif val_in_range == 1:
+        return max_val
+    elif val_in_range == -1:
+        return min_val
+
+def exclude(value, start, stop):
+    """Exclude a value from the range (start, stop).
+
+    Rounds up or down to the closest limit of the range.
+    """
+    if value > start and value < stop:
+        # value is in the excluded range
+        # scale the value to a unit float on the given range
+        scaled = (value - start) / (stop - start)
+        # round the value; if it is 0, it is closer to the start of the range
+        if round(scaled) < 0.5:
+            return start
+        else:
+            return stop
+    else:
+        return stop
+
+
+def fold(value, min_val=None, max_val=None):
+    """Fold a floating-point value back into a given range."""
+    while True:
+        val_in_range = in_range(value, min_val, max_val)
+        if val_in_range == 0:
+            break
+        elif val_in_range == 1:
+            value = 2*max_val - value
+        elif val_in_range == -1:
+            value = 2*min_val - value
+    return value
+
+def wrap(value, min_val, max_val):
+    return ((value - min_val) % max_val) + min_val
+
+def scale(value, min_val, max_val):
+    """Scale a unit float to a specified range."""
+    return (value * (max_val - min_val)) + min_val
+
 # --- parameter generators ---
 
 class ParameterGenerator(object):
@@ -235,7 +296,7 @@ class DynamicModulator(Modulator):
         Args:
             pgen: the parameter generator use
             operation: a function that takes a signal value as the first
-                argument and the fixed value as the second argument and returns the
+                argument and the dynamic value as the second argument and returns the
                 modulated value.
         """
         self.pgen = pgen
@@ -243,6 +304,28 @@ class DynamicModulator(Modulator):
 
     def modulate(self, signal):
         return self.operation(signal, self.pgen.get())
+
+class BrickwallLimiter(Modulator):
+    """Hard-limit a parameter to be within certain bounds."""
+    @register_name
+    def __init__(self, min_limit=None, max_limit=None, clip_operation=clamp):
+        """Create a new brickwall limiter.
+
+        Args:
+            min_limit: the minimum value this parameter may take.  If None, no
+                minimum limit is imposed.
+            max_limit: the maximum value this parameter may take.  If None, no
+                maximum limit is imposed.
+            clip_operation: a function with the signature
+                f(value, min_limit, max_limit) -> modulated value
+                default is clamp
+        """
+        self.min_limit = min_limit
+        self.max_limit = max_limit
+        self.operation = clip_operation
+
+    def modulate(self, signal):
+        return self.operation(signal, self.min_limit, self.max_limit)
 
 # --- parameter generator mutators ---
 
@@ -318,49 +401,6 @@ class ModulationChain(FXChain):
         for mod in self.chain:
             val = mod.modulate(val)
         return val
-
-# --- numeric helper functions ---
-
-def in_range(value, min_val=None, max_val=None):
-    """Determine if a value is in the interval [min_val, max_val], inclusive.
-
-    Returns the integer 0 if the value is in range, +1 if it is above the max,
-    and -1 if it is below the min.
-    """
-    in_range = 0
-    if min_val is not None and value < min_val:
-        in_range = -1
-    elif max_val is not None and value > max_val:
-        in_range = 1
-    return in_range
-
-def clamp(value, min_val=None, max_val=None):
-    val_in_range = in_range(value, min_val, max_val)
-    if val_in_range == 0:
-        return
-    elif val_in_range == 1:
-        return max_val
-    elif val_in_range == -1:
-        return min_val
-
-def fold(value, min_val=None, max_val=None):
-    """Fold a floating-point value back into a given range."""
-    while True:
-        val_in_range = in_range(value, min_val, max_val)
-        if val_in_range == 0:
-            break
-        elif val_in_range == 1:
-            value = 2*max_val - value
-        elif val_in_range == -1:
-            value = 2*min_val - value
-    return value
-
-def wrap(value, min_val, max_val):
-    return ((value - min_val) % max_val) + min_val
-
-def scale(value, min_val, max_val):
-    """Scale a unit float to a specified range."""
-    return (value * (max_val - min_val)) + min_val
 
 # --- error handling ---
 

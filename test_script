@@ -5,6 +5,8 @@ new IntegratingDiffusor(Diffusor(Rate(period=60.0)), name='diffusor')
 new ModulationChain(get('cyan hue gen'), name='mod chain')
 new DynamicModulator(get('diffusor'), add_h, name='diffusor modulator')
 cmd mod chain.append(get('diffusor modulator'))
+#new BrickwallLimiter(0.9/6.0, 1.1/6.0, exclude, name='green excluder')
+#cmd mod chain.append(get('green excluder'))
 
 new ConstantList([0, 0.2], name = 'offset generator')
 new DynamicModulator(get('offset generator'), add_h, name='offset modulator')
