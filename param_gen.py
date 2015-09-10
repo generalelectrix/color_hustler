@@ -217,7 +217,6 @@ class IntegratingDiffusor(ParameterGenerator):
     """Integrate the output of a Diffusor for use as a modulator."""
     @register_name
     def __init__(self, diffusor):
-        print diffusor
         self.diff = diffusor
         self.accum = 0
 
