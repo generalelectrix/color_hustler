@@ -52,6 +52,24 @@ class Color(object):
     def b(self, val):
         self._brightness = clamp(val, 0.0, 1.0)
 
+def unpack_h(color):
+    return color.h
+
+def unpack_s(color):
+    return color.s
+
+def unpack_b(color):
+    return color.b
+
+def repack_h(color, h):
+    return Color(h, color.s, color.b)
+
+def repack_s(color, s):
+    return Color(color.h, s, color.b)
+
+def repack_b(color, b):
+    return Color(color.h, color.s, b)
+
 def add_h(color, value):
     return Color((color.h + value) % 1.0, color.s, color.b)
 

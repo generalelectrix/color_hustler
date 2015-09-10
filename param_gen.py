@@ -258,13 +258,39 @@ class Function(ParameterGenerator):
 
 class Modulator(object):
     """Base class for tools to modulate a parameter stream."""
-    @register_name
-    def __init__(self):
-        raise NotImplementedError("Inheriting classes must define their own "
-                                  "constructor.")
-    def modulate(self, value):
-        """Apply the modulation operation."""
+    #@register_name
+    def __init__(self, preprocessor=None, postprocessor=None):
+        """Register pre- and post-processors for value extraction from complex streams.
+
+        Args:
+            preprocessor: a function that takes the input stream and returns the value
+                on which to run the modulation operation
+            postprocessor: a function that takes the original input stream and the modulated
+                value and returns the modulated stream.
+        """
+        self.preprocessor = preprocessor
+        self.postprocessor = postprocessor
+
+    def modulation_operation(self, signal):
+        """Apply the modulation operation to the signal.
+
+        Abstract method.
+        """
         raise NotImplementedError("Inheriting classes must override this method.")
+
+    def modulate(self, signal):
+        """Apply the pre- and post-processors astride the modulation operation."""
+        if self.preprocessor:
+            value = self.preprocessor(signal)
+        else:
+            value = signal
+
+        mod_value = self.modulation_operation(value)
+
+        if self.postprocessor:
+            mod_value = self.postprocessor(signal, mod_value)
+
+        return mod_value
 
 class StaticModulator(Modulator):
     """Use a fixed value to modulate a signal.
@@ -272,7 +298,7 @@ class StaticModulator(Modulator):
     Some uses of this class are things like adding fixed offsets.
     """
     @register_name
-    def __init__(self, value, operation):
+    def __init__(self, value, operation, **kwargs):
         """Create a modifier with a static value and operation.
 
         Args:
@@ -281,16 +307,17 @@ class StaticModulator(Modulator):
                 argument and the fixed value as the second argument and returns the
                 modulated value.
         """
+        super(StaticModulator, self).__init__(**kwargs)
         self.value = value
         self.operation = operation
 
-    def modulate(self, signal):
+    def modulation_operation(self, signal):
         return self.operation(signal, self.value)
 
 class DynamicModulator(Modulator):
     """Use another parameter generator to modulate a signal."""
     @register_name
-    def __init__(self, pgen, operation):
+    def __init__(self, pgen, operation, **kwargs):
         """Create a modifier with a dynamic value and operation.
 
         Args:
@@ -299,16 +326,17 @@ class DynamicModulator(Modulator):
                 argument and the dynamic value as the second argument and returns the
                 modulated value.
         """
+        super(DynamicModulator, self).__init__(**kwargs)
         self.pgen = pgen
         self.operation = operation
 
-    def modulate(self, signal):
+    def modulation_operation(self, signal):
         return self.operation(signal, self.pgen.get())
 
 class BrickwallLimiter(Modulator):
     """Hard-limit a parameter to be within certain bounds."""
     @register_name
-    def __init__(self, min_limit=None, max_limit=None, clip_operation=clamp):
+    def __init__(self, min_limit=None, max_limit=None, clip_operation=clamp, **kwargs):
         """Create a new brickwall limiter.
 
         Args:
@@ -320,11 +348,12 @@ class BrickwallLimiter(Modulator):
                 f(value, min_limit, max_limit) -> modulated value
                 default is clamp
         """
+        super(BrickwallLimiter, self).__init__(**kwargs)
         self.min_limit = min_limit
         self.max_limit = max_limit
         self.operation = clip_operation
 
-    def modulate(self, signal):
+    def modulation_operation(self, signal):
         return self.operation(signal, self.min_limit, self.max_limit)
 
 # --- parameter generator mutators ---
