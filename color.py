@@ -1,3 +1,4 @@
+"""Color-organ-specific HSB color model, color generation, color operations."""
 from random import Random
 
 from name_registry import register_name
