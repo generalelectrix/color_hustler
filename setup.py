@@ -9,7 +9,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-requires = ['mido',
+requires = ['mido', 'dill'
 ]
 
 setup(

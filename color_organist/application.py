@@ -188,6 +188,3 @@ class Controller(cmd.Cmd):
             err = traceback.format_exc()
             print "An error occurred during script execution, line {}\n".format(n)
             print err
-
-if __name__ == '__main__':
-    Controller()
