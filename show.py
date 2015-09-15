@@ -12,7 +12,7 @@ from rate import SYS_CLOCK_NAME, FRAME_CLOCK_NAME
 
 # global wildcard imports to enable interactive object creation in one namespace
 # I'm so sorry.
-from color_organist import *
+from organ import *
 from rate import *
 from color import *
 from param_gen import *
