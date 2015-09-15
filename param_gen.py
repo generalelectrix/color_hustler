@@ -420,7 +420,7 @@ class FXChain(object):
         """
         self.chain.insert(index, effect)
 
-class ModulationChain(FXChain):
+class ModulationChain(FXChain, ParameterGenerator):
     """Encapsulate a linear chain of parameter manipulation."""
 
     def get(self):
