@@ -1,6 +1,11 @@
+"""Entities relating to the progression of time."""
+
 import time
 
 from name_registry import register_name, get
+
+SYS_CLOCK_NAME = 'system_clock'
+FRAME_CLOCK_NAME = 'frame_clock'
 
 class Rate(object):
     """Helper class for working with rates."""
@@ -58,7 +63,7 @@ class FrameClock(object):
         return self.now
 
 class SystemClock(object):
-    """Helper object to enable pickling."""
+    """Wrap the call to the system time in an object to ease pickling."""
     @register_name
     def __init__(self):
         pass
@@ -68,7 +73,7 @@ class SystemClock(object):
 class Trigger(object):
     """Polling-based scheduling of an operation."""
     @register_name
-    def __init__(self, rate, clock_name='frame clock'):
+    def __init__(self, rate, clock_name=FRAME_CLOCK_NAME):
         """Create a new Trigger.
 
         This trigger will initially be in a state where it will fire immediately

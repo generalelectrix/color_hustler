@@ -2,7 +2,7 @@ import math
 import time
 from random import Random
 
-from rate import Rate
+from rate import Rate, FRAME_CLOCK_NAME
 from name_registry import register_name, get
 
 # --- numeric helper functions ---
@@ -197,7 +197,7 @@ class Diffusor(ParameterGenerator):
     is defined to be 1.0, implying what amounts to a completely random shift.
     """
     @register_name
-    def __init__(self, rate, clock_name='frame clock', seed=None):
+    def __init__(self, rate, clock_name=FRAME_CLOCK_NAME, seed=None):
         """Initialize a diffusor with a rate."""
         self.rate = rate
         self.clock = get(clock_name)
@@ -432,8 +432,5 @@ class ModulationChain(FXChain, ParameterGenerator):
 
 # --- error handling ---
 
-class PGError(Exception):
-    pass
-
-class ModulationChainError(PGError):
+class ModulationChainError(Exception):
     pass

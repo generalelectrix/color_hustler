@@ -1,21 +1,13 @@
 """A player piano for the color organ.
 
-Necessary elements:
-
-Conversion of a color into a midi event in color organ scheme.
-
+Conversion of a color into a midi event in color organ scheme:
 Velocity = intensity
-Hue = midi note
-Use 0 to 127 for maximum expression (still not a lot of colors...)
-
+Hue = midi note, use 0 to 127 for maximum expression (still not a lot of colors...)
 Saturation: set as a control change before sending the note
 """
-
 import mido
 
-import param_gen as pgen
-from color import Color, HSBColorGenerator
-from name_registry import NameRegistry, register_name
+from name_registry import register_name
 
 # control mappings
 CC_SAT = 11
@@ -24,7 +16,14 @@ CC_SAT = 11
 SHOW_SUFFIX = '.colorg'
 
 class MidiPort(object):
-    """Global midi port.  Implemented as a Singleton."""
+    """Global midi port.
+
+    Implemented as a Singleton to simplify loading saved shows, as the mido
+    midi library is implemented using ctypes and these objects cannot be pickled.
+    Instead we call the constructor MidiPort() wherever we want to use the global
+    port for the show rather than holding on to a reference to it.  Not optimally
+    efficient but not an issue thus far.
+    """
     __instance = None
     def __new__(cls, port_name=None):
         """Open a named port."""
