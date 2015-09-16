@@ -31,8 +31,8 @@ class SavedShow(object):
 class Show(object):
     """Encapsulate the show runtime environment."""
     def __init__(self, framerate, cmd_queue, resp_queue):
-        self.system_clock = SystemClock(name='system_clock')
-        self.render_trigger = Trigger(Rate(hz=framerate), 'system_clock')
+        self.system_clock = SystemClock(name=SYS_CLOCK_NAME)
+        self.render_trigger = Trigger(Rate(hz=framerate), SYS_CLOCK_NAME)
 
         # use sets to ensure items are only registered once
         self.organists = set()
@@ -79,11 +79,6 @@ class Show(object):
 
     def run(self):
         """Run the show application."""
-        import color as col
-        import rate
-        import param_gen as pgen
-
-        port = MidiPort()
 
         self.running = True
         # instance the frame clock and call first tick

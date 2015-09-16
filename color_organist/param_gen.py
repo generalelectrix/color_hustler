@@ -1,8 +1,7 @@
 import math
-import time
 from random import Random
 
-from rate import Rate, FRAME_CLOCK_NAME
+from rate import FRAME_CLOCK_NAME
 from name_registry import register_name, get
 
 # --- numeric helper functions ---
@@ -431,6 +430,9 @@ class ModulationChain(FXChain, ParameterGenerator):
         return val
 
 # --- error handling ---
+
+class PGError(Exception):
+    pass
 
 class ModulationChainError(Exception):
     pass
