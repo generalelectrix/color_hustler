@@ -9,6 +9,62 @@ import param_gen as pgen
 def clamp(val, min_val, max_val):
     return min(max(min_val, val), max_val)
 
+
+
+# class Color(object):
+#     """A color in sRGB gamut.
+
+#     Internally represented as red, green, and blue floats on the range 0.0 to 1.0.
+#     """
+#     @staticmethod
+#     def rgb_to_hsb(red, green, blue):
+#         min_val = min(red, green, blue)
+#         max_val = max(red, green, blue)
+#         delta = max_val - min_val
+
+#         brightness = max_val
+
+#         if delta == 0.0:
+#             # this is a gray, arbitrarily choose hue = 0
+#             hue = 0.0
+#             saturation = 0.0
+#         else:
+#             saturation = delta / max_val
+
+#             delta_r = (((max_val - red)/6) + (delta/2))/delta
+#             delta_g = (((max_val - green)/6) + (delta/2))/delta
+#             delta_b = (((max_val - blue)/6) + (delta/2))/delta
+
+#             if red == max_val:
+#                 hue = delta_b - delta_g
+#             elif green == max_val:
+#                 hue = (1.0 / 3.0) + delta_r - delta_b
+#             else:
+#                 hue = (2.0 / 3.0) + delta_g - delta_r
+
+#             if hue < 0.0:
+#                 hue += 1.0
+#             elif hue > 1.0:
+#                 hue -= 1.0
+
+#         return (hue, saturation, brightness)
+
+#     @staticmethod
+#     def hsb_to_rgb(hue, saturation, brightness):
+#         if saturation == 0.0:
+#             return brightness, brightness, brightness
+#         else:
+#             hue = hue * 6.0
+#             if hue == 6.0:
+#                 hue = 0.0
+#         #TODO: finish this function
+
+
+#     def __init__(self, color_space, coordinates):
+#         """Create a new color using a particular color space and coordinates."""
+#         if color_space == 'rgb':
+#             self._red, self._green, self._blue = coordinates
+
 class Color(object):
     """Roll my own HSB color to match how the color organ works."""
     def __init__(self, hue, saturation, brightness):
