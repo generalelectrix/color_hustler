@@ -64,9 +64,13 @@ class ColorOrgan(object):
 
     def send_color(self, color):
         """Send a color message to the color organ."""
-        note = unit_float_to_7bit(color.h)
-        velocity = unit_float_to_7bit(color.b)
-        saturation = unit_float_to_7bit(color.s)
+        # convert the color to HSV
+        col_hsv = color.in_hsv()
+
+        # color organ hue is offset by 0.5 to put red at the center of the keyboard
+        note = unit_float_to_7bit((col_hsv.hue_hsv + 0.5) % 1.0)
+        velocity = unit_float_to_7bit(col_hsv.val_hsv)
+        saturation = unit_float_to_7bit(col_hsv.sat_hsv)
 
         sat_msg = mido.Message('control_change',
                                channel=self.ctrl_channel,
