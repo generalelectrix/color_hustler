@@ -295,6 +295,8 @@ class ColorGenerator(object):
 
     Really just used to allow type filtering.
     """
+    pass
+
 
 class HSVColorGenerator(ColorGenerator):
     """Random HSV color generation."""

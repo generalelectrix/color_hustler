@@ -7,7 +7,7 @@ Saturation: set as a control change before sending the note
 """
 import mido
 
-from name_registry import register_name
+from .name_registry import register_name
 
 # control mappings
 CC_SAT = 11
