@@ -16,6 +16,7 @@ import mido
 from show import Show
 
 from organ import ColorOrgan, ColorOrganist
+from hue_organ import HueOrgan
 from param_gen import ParameterGenerator, Modulator, Mutator, FXChain
 from color import ColorGenerator
 from rate import Trigger

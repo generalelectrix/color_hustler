@@ -10,7 +10,7 @@ class HueOrgan(object):
     def __init__(self, name, banks, start_bank=None, ttime=None):
         self.banks = banks
         # pick a random bank if we didn't specify one
-        self.current_bank = banks.keys()[0] if start_bank is None else banks[start_bank]
+        self.current_bank = banks.values()[0] if start_bank is None else banks[start_bank]
 
         # keep track of where we are in the bank with an iterator
         self.pattern_iter = cycle(self.current_bank)
@@ -20,7 +20,11 @@ class HueOrgan(object):
 
     def send_color(self, color):
         """Send a color message to the next set of hue lamps."""
+        color_rgb = color.in_rgb()
+        color = (color_rgb.red, color_rgb.green, color_rgb.blue)
         lamps = self.pattern_iter.next()
+        if isinstance(lamps, str):
+            lamps = (lamps,)
         for lamp in lamps:
             self.lamp_trans.send_color(lamp, color)
 
