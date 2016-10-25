@@ -6,7 +6,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-requires = ['mido', 'dill'
+requires = ['mido', 'dill', 'husl'
 ]
 
 setup(
