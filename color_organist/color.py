@@ -391,7 +391,7 @@ def nice_color_gen_husl(start_color, name=None):
     """
     h_gen = pgen.GaussianRandom(start_color.hue_husl, 0.1)
     s_gen = pgen.GaussianRandom(1.0, 0.2)
-    l_gen = pgen.GaussianRandom(0.5, 0.2)
+    l_gen = pgen.GaussianRandom(0.3, 0.2)
     return HUSLColorGenerator(h_gen, s_gen, l_gen, name=name)
 
 def test_color_gen(start_color, name=None):
