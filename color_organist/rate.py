@@ -56,7 +56,7 @@ class Trigger(object):
         self.rate = rate
         if clock is None:
             from . import frame_clock as clock
-            
+
         self.clock = clock
         self.last_trig = clock.time() - self.period
 
@@ -64,25 +64,26 @@ class Trigger(object):
     def period(self):
         return self.rate.period
 
-    def reset(self):
-        """Reset the trigger timer to now."""
-        self.last_trig = self.clock.time()
-
     def trigger(self):
-        """Return True if it is time to trigger and reset trigger clock."""
-        if self._overdue():
-            self.reset()
+        """Return True if it is time to trigger, and reset trigger clock."""
+        now = self.clock.time()
+        if self._time_until_trig(now) <= 0.0:
+            self.last_trig = now
             return True
         return False
-
-    def _overdue(self):
-        """Return True is at least one period has passed since the last trigger."""
-        return self.time_until_trig() <= 0.0
 
     def time_until_trig(self):
         """Return the time until the next trigger event.
 
         If this trigger hasn't fired but is overdue, return a negative time.
         """
-        return self.period - (self.clock.time() - self.last_trig)
+        return self._time_until_trig(self.clock.time())
+
+    def _time_until_trig(self, now):
+        """Return the time until the next trigger event.
+
+        Use a time passed in for consistency across a single method call if
+        this trigger is being driven by the system clock.
+        """
+        return self.period - (now - self.last_trig)
 
