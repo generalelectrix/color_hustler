@@ -4,7 +4,6 @@ from husl import husl_to_rgb as husl_to_rgb_args
 
 from random import Random
 
-from name_registry import register_name
 import param_gen as pgen
 
 def rgb_to_husl(coordinates):
@@ -21,29 +20,29 @@ def hsv_to_rgb(coordinates):
     hue, saturation, value = coordinates
     if saturation == 0.0:
         return value, value, value
+
+    hue = hue * 6.0
+    if hue == 6.0:
+        hue = 0.0
+    sector = int(hue)
+    v_1 = value*(1.0-saturation)
+    v_2 = value*(1.0 - saturation * (hue - sector))
+    v_3 = value*(1.0 - saturation * (1 - (hue - sector)))
+
+    if sector == 0:
+        r, g, b = value, v_3, v_1
+    elif sector == 1:
+        r, g, b = v_2, value, v_1
+    elif sector == 2:
+        r, g, b = v_1, value, v_3
+    elif sector == 3:
+        r, g, b = v_1, v_2, value
+    elif sector == 4:
+        r, g, b = v_3, v_1, value
     else:
-        hue = hue * 6.0
-        if hue == 6.0:
-            hue = 0.0
-        sector = int(hue)
-        v_1 = value*(1.0-saturation)
-        v_2 = value*(1.0 - saturation * (hue - sector))
-        v_3 = value*(1.0 - saturation * (1 - (hue - sector)))
+        r, g, b = value, v_1, v_2
 
-        if sector == 0:
-            r, g, b = value, v_3, v_1
-        elif sector == 1:
-            r, g, b = v_2, value, v_1
-        elif sector == 2:
-            r, g, b = v_1, value, v_3
-        elif sector == 3:
-            r, g, b = v_1, v_2, value
-        elif sector == 4:
-            r, g, b = v_3, v_1, value
-        else:
-            r, g, b = value, v_1, v_2
-
-        return [r, g, b]
+    return [r, g, b]
 
 def rgb_to_hsv(coordinates):
     red, green, blue = coordinates
@@ -300,7 +299,6 @@ class ColorGenerator(object):
 
 class HSVColorGenerator(ColorGenerator):
     """Random HSV color generation."""
-    @register_name
     def __init__(self, h_gen, s_gen, v_gen):
         """Create a new random color generator."""
         self.h_gen = h_gen
@@ -318,7 +316,6 @@ class HSVColorGenerator(ColorGenerator):
 
 class HUSLColorGenerator(ColorGenerator):
     """Random HUSL color generation."""
-    @register_name
     def __init__(self, h_gen, s_gen, l_gen):
         """Create a new random color generator."""
         self.h_gen = h_gen
@@ -336,7 +333,6 @@ class HUSLColorGenerator(ColorGenerator):
 
 class ColorSwarm(ColorGenerator):
     """Agglomerate multiple color generators."""
-    @register_name
     def __init__(self, col_gens, random=False, seed=None):
         """Create a new ColorSwarm.
 
@@ -357,14 +353,14 @@ class ColorSwarm(ColorGenerator):
         if self.random:
             gen = self.rand_gen.randint(0, len(self.gens)-1)
             return self.gens[gen].get()
-        else:
-            # advance to the next generator first in case the number of gens has
-            # changed since the last call.
-            self.next = (self.next + 1) % len(self.gens)
-            col = self.gens[self.next].get()
-            return col
 
-def nice_color_gen_hsv(start_color, name=None):
+        # advance to the next generator first in case the number of gens has
+        # changed since the last call.
+        self.next = (self.next + 1) % len(self.gens)
+        col = self.gens[self.next].get()
+        return col
+
+def nice_color_gen_hsv(start_color):
     """Instance an aesthetically pleasing color generator.
 
     start_color is an optional color to start the generator with.  At the moment,
@@ -377,9 +373,9 @@ def nice_color_gen_hsv(start_color, name=None):
     h_gen = pgen.GaussianRandom(start_color.hue_hsv, 0.1)
     s_gen = pgen.GaussianRandom(1.0, 0.2)
     b_gen = pgen.GaussianRandom(1.0, 0.2)
-    return HSVColorGenerator(h_gen, s_gen, b_gen, name=name)
+    return HSVColorGenerator(h_gen, s_gen, b_gen)
 
-def nice_color_gen_husl(start_color, name=None):
+def nice_color_gen_husl(start_color):
     """Instance an aesthetically pleasing color generator.
 
     start_color is an optional color to start the generator with.  At the moment,
@@ -392,20 +388,11 @@ def nice_color_gen_husl(start_color, name=None):
     h_gen = pgen.GaussianRandom(start_color.hue_husl, 0.1)
     s_gen = pgen.GaussianRandom(1.0, 0.2)
     l_gen = pgen.GaussianRandom(0.3, 0.2)
-    return HUSLColorGenerator(h_gen, s_gen, l_gen, name=name)
+    return HUSLColorGenerator(h_gen, s_gen, l_gen)
 
-def test_color_gen(start_color, name=None):
+def test_color_gen(start_color):
     """Return a color generator that produces a constant color."""
     h_gen = pgen.Constant(start_color.hue_hsv)
     s_gen = pgen.Constant(start_color.sat_hsv)
     v_gen = pgen.Constant(start_color.val_hsv)
-    return HSVColorGenerator(h_gen, s_gen, v_gen, name=name)
-
-
-class ColorspaceError(Exception):
-    pass
-
-
-
-
-
+    return HSVColorGenerator(h_gen, s_gen, v_gen)

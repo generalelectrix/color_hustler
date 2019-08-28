@@ -6,8 +6,7 @@ from .organ import InvalidBankError
 
 class HueOrgan(object):
     """Takes a stream of colors and sends them to hue lamps."""
-    @register_name
-    def __init__(self, name, banks, start_bank=None, ttime=None):
+    def __init__(self, banks, start_bank=None, ttime=None):
         self.banks = banks
         # pick a random bank if we didn't specify one
         self.current_bank = banks.values()[0] if start_bank is None else banks[start_bank]
@@ -22,7 +21,7 @@ class HueOrgan(object):
         """Send a color message to the next set of hue lamps."""
         color_rgb = color.in_rgb()
         color = (color_rgb.red, color_rgb.green, color_rgb.blue)
-        lamps = self.pattern_iter.next()
+        lamps = next(self.pattern_iter)
         if isinstance(lamps, str):
             lamps = (lamps,)
         for lamp in lamps:

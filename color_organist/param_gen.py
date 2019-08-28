@@ -1,8 +1,6 @@
 import math
 from random import Random
-
-from rate import FRAME_CLOCK_NAME
-from name_registry import register_name, get
+from . import frame_clock
 
 # --- numeric helper functions ---
 
@@ -65,6 +63,12 @@ def scale(value, min_val, max_val):
     """Scale a unit float to a specified range."""
     return (value * (max_val - min_val)) + min_val
 
+_constrainers = {
+    'fold': fold,
+    'clip': clamp,
+    'wrap': wrap,
+}
+
 # --- parameter generators ---
 
 class ParameterGenerator(object):
@@ -73,11 +77,6 @@ class ParameterGenerator(object):
     Any parameter generator which is capable of producing a value on its own
     should inherit from this class.
     """
-
-    def __init__(self):
-        """Inheriting classes should define their own constructor."""
-        raise NotImplementedError("Inheriting classes must define their own constructor.")
-
     def get(self):
         """"Get the next raw value from this generator.
 
@@ -93,18 +92,10 @@ class ParameterGenerator(object):
         folded back into range.  Otherwise, out-of-range values will be clipped.
         """
         val = self.get()
-        if mode == 'fold':
-            return fold(val, min_val, max_val)
-        elif mode == 'clip':
-            return clamp(val, min_val, max_val)
-        elif mode == 'wrap':
-            return wrap(val, min_val, max_val)
-        else:
-            raise PGError("Unrecognized constraint mode: {}".format(mode))
+        return _constrainers[mode](val, min_val, max_val)
 
 class Constant(ParameterGenerator):
     """Helper class to generate constant values."""
-    @register_name
     def __init__(self, center):
         self.center = center
 
@@ -113,7 +104,6 @@ class Constant(ParameterGenerator):
 
 class ConstantList(ParameterGenerator):
     """Choose from a list of constant values."""
-    @register_name
     def __init__(self, values, random=False, seed=None):
         self.values = values
         self.random = random
@@ -126,14 +116,13 @@ class ConstantList(ParameterGenerator):
         if self.random:
             index = self.rand_gen.randint(0, len(self.values)-1)
             return self.values[index]
-        else:
-            self.index = (self.index + 1) % len(self.values)
-            return self.values[self.index]
+
+        self.index = (self.index + 1) % len(self.values)
+        return self.values[self.index]
 
 
 class UniformRandom(ParameterGenerator):
     """Generate unformly-distributed random numbers."""
-    @register_name
     def __init__(self, center, width, seed=None):
         """Create a new uniform random number generator.
 
@@ -164,7 +153,6 @@ class UniformRandom(ParameterGenerator):
 
 class GaussianRandom(ParameterGenerator):
     """Generate gaussian-distributed random numbers."""
-    @register_name
     def __init__(self, center, width, seed=None):
         """Create a new gaussian random number generator.
 
@@ -195,17 +183,15 @@ class Diffusor(ParameterGenerator):
     After one period given by rate, the full-width half-max of this distribution
     is defined to be 1.0, implying what amounts to a completely random shift.
     """
-    @register_name
-    def __init__(self, rate, clock_name=FRAME_CLOCK_NAME, seed=None):
+    def __init__(self, rate, seed=None):
         """Initialize a diffusor with a rate."""
         self.rate = rate
-        self.clock = get(clock_name)
-        self.last_called = self.clock.time()
+        self.last_called = frame_clock.time()
         self.rand_gen = GaussianRandom(0.0, 0.0, seed)
 
     def get(self):
         """Get the integrated diffusive shift."""
-        now = self.clock.time()
+        now = frame_clock.time()
         elapsed = now - self.last_called
         width = math.sqrt(elapsed / (4*self.rate.period))
         self.rand_gen.width = width
@@ -214,7 +200,6 @@ class Diffusor(ParameterGenerator):
 
 class IntegratingDiffusor(ParameterGenerator):
     """Integrate the output of a Diffusor for use as a modulator."""
-    @register_name
     def __init__(self, diffusor):
         self.diff = diffusor
         self.accum = 0
@@ -226,8 +211,7 @@ class IntegratingDiffusor(ParameterGenerator):
 
 class Function(ParameterGenerator):
     """Provide the value of a temporal, periodic function."""
-    @register_name
-    def __init__(self, rate, func, clock_name='frame clock'):
+    def __init__(self, rate, func):
         """Create a function generator with a specified function.
 
         func should take two positional arguments: (phase, rate)
@@ -236,9 +220,8 @@ class Function(ParameterGenerator):
         """
         self.rate = rate
         self.func = func
-        self.clock = get(clock_name)
         self._phase = 0
-        self.last_called = self.wc.now
+        self.last_called = frame_clock.time()
 
     @property
     def phase(self):
@@ -249,7 +232,7 @@ class Function(ParameterGenerator):
         self._phase = phase % 1.0
 
     def get(self):
-        self.phase += (self.clock.time() - self.last_called)/self.rate.period
+        self.phase += (frame_clock.time() - self.last_called)/self.rate.period
         return self.func(self.phase, self.rate)
 
 # --- modulators ---
@@ -295,7 +278,6 @@ class StaticModulator(Modulator):
 
     Some uses of this class are things like adding fixed offsets.
     """
-    @register_name
     def __init__(self, value, operation, **kwargs):
         """Create a modifier with a static value and operation.
 
@@ -314,7 +296,6 @@ class StaticModulator(Modulator):
 
 class DynamicModulator(Modulator):
     """Use another parameter generator to modulate a signal."""
-    @register_name
     def __init__(self, pgen, operation, **kwargs):
         """Create a modifier with a dynamic value and operation.
 
@@ -333,7 +314,6 @@ class DynamicModulator(Modulator):
 
 class BrickwallLimiter(Modulator):
     """Hard-limit a parameter to be within certain bounds."""
-    @register_name
     def __init__(self, min_limit=None, max_limit=None, clip_operation=clamp, **kwargs):
         """Create a new brickwall limiter.
 
@@ -358,16 +338,12 @@ class BrickwallLimiter(Modulator):
 
 class Mutator(object):
     """Base class for tools to mutate other things once per frame."""
-    def __init__(self):
-        raise NotImplementedError("Inheriting classes must define their own "
-                                  "constructor.")
     def mutate(self):
         """Apply the mutation operation to the target."""
         raise NotImplementedError("Inheriting classes must override this method.")
 
 class Twiddler(Mutator):
     """Generic parameter twiddler."""
-    @register_name
     def __init__(self, twiddle_gen, operation, target):
         """Create a new twiddler.
 
@@ -388,11 +364,10 @@ class Twiddler(Mutator):
 
 class FXChain(object):
     """Base class for linear effects chains."""
-    @register_name
     def __init__(self, head):
         """Initialize a linear effects chain with a source."""
         if not hasattr(head, 'get'):
-            raise ModulationChainError("The head of an effects chain must have "
+            raise TypeError("The head of an effects chain must have "
                                        "a get method.")
         self.chain = []
         self.source = head
@@ -428,11 +403,3 @@ class ModulationChain(FXChain, ParameterGenerator):
         for mod in self.chain:
             val = mod.modulate(val)
         return val
-
-# --- error handling ---
-
-class PGError(Exception):
-    pass
-
-class ModulationChainError(Exception):
-    pass

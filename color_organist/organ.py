@@ -7,13 +7,8 @@ Saturation: set as a control change before sending the note
 """
 import mido
 
-from .name_registry import register_name
-
 # control mappings
 CC_SAT = 11
-
-# show saving
-SHOW_SUFFIX = '.colorg'
 
 class MidiPort(object):
     """Global midi port.
@@ -53,8 +48,7 @@ class ColorOrgan(object):
     with no sustain period, as that would be more than I want to deal with
     this late at night and this close to the show :)
     """
-    @register_name
-    def __init__(self, name, ctrl_channel, bank_channel, banks=None):
+    def __init__(self, ctrl_channel, bank_channel, banks=None):
         self.ctrl_channel = ctrl_channel
         self.bank_channel = bank_channel
         if banks is None:
@@ -97,7 +91,6 @@ class ColorOrgan(object):
 
 class ColorOrganist(object):
     """Class which uses a color stream to play a color organ."""
-    @register_name
     def __init__(self, organ, note_trig, col_gen):
         self.organ = organ
         self.note_trig = note_trig

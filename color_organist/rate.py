@@ -1,11 +1,5 @@
 """Entities relating to the progression of time."""
-
 import time
-
-from name_registry import register_name, get
-
-SYS_CLOCK_NAME = 'system_clock'
-FRAME_CLOCK_NAME = 'frame_clock'
 
 class Rate(object):
     """Helper class for working with rates."""
@@ -23,7 +17,7 @@ class Rate(object):
         elif period is not None:
             self.period = period
         else:
-            raise RateError("Must supply at least one argument to Rate().")
+            raise TypeError("Must supply at least one argument to Rate().")
 
     @property
     def hz(self):
@@ -49,31 +43,9 @@ class Rate(object):
     def period(self, period):
         self.hz = 1.0 / float(period)
 
-class FrameClock(object):
-    """Source of universal frame time."""
-    @register_name
-    def __init__(self):
-        # don't set the initial time without ticking once
-        self.now = None
-
-    def tick(self):
-        self.now = time.time()
-
-    def time(self):
-        return self.now
-
-class SystemClock(object):
-    """Wrap the call to the system time in an object to ease pickling."""
-    @register_name
-    def __init__(self):
-        pass
-    def time(self):
-        return time.time()
-
 class Trigger(object):
     """Polling-based scheduling of an operation."""
-    @register_name
-    def __init__(self, rate, clock_name=FRAME_CLOCK_NAME):
+    def __init__(self, rate, clock=None):
         """Create a new Trigger.
 
         This trigger will initially be in a state where it will fire immediately
@@ -82,8 +54,11 @@ class Trigger(object):
         Uses the name registration system to get the clock.
         """
         self.rate = rate
-        self.clock = get(clock_name)
-        self.last_trig = self.clock.time() - self.period
+        if clock is None:
+            from . import frame_clock as clock
+            
+        self.clock = clock
+        self.last_trig = clock.time() - self.period
 
     @property
     def period(self):
@@ -95,15 +70,14 @@ class Trigger(object):
 
     def trigger(self):
         """Return True if it is time to trigger and reset trigger clock."""
-        if self.overdue():
+        if self._overdue():
             self.reset()
             return True
-        else:
-            return False
+        return False
 
-    def overdue(self):
+    def _overdue(self):
         """Return True is at least one period has passed since the last trigger."""
-        return True if self.time_until_trig() <= 0.0 else False
+        return self.time_until_trig() <= 0.0
 
     def time_until_trig(self):
         """Return the time until the next trigger event.
@@ -112,16 +86,3 @@ class Trigger(object):
         """
         return self.period - (self.clock.time() - self.last_trig)
 
-    def block_until_trig(self):
-        """Block thread execution until the next trigger event."""
-        while True:
-            time_until_trig = self.time_until_trig()
-            if time_until_trig <= 0.0:
-                # time to trigger
-                break
-            else:
-                # wait 95% of the remaining time and run again
-                time.sleep(0.95*time_until_trig)
-
-class RateError(Exception):
-    pass
