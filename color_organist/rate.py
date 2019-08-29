@@ -2,7 +2,7 @@
 
 import time
 
-from name_registry import register_name, get
+from .name_registry import register_name, get
 
 SYS_CLOCK_NAME = 'system_clock'
 FRAME_CLOCK_NAME = 'frame_clock'

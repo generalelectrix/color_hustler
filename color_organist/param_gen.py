@@ -1,8 +1,8 @@
 import math
 from random import Random
 
-from rate import FRAME_CLOCK_NAME
-from name_registry import register_name, get
+from .rate import FRAME_CLOCK_NAME
+from .name_registry import register_name, get
 
 # --- numeric helper functions ---
 

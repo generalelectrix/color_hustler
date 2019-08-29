@@ -1,24 +1,24 @@
 """The show runtime environment."""
 import traceback
-from Queue import Empty
+from queue import Empty
 
 import mido
 
 # use dill to enable pickling lambdas
 import dill as pickle
 
-from name_registry import NameRegistry
-from rate import SYS_CLOCK_NAME, FRAME_CLOCK_NAME
+from .name_registry import NameRegistry
+from .rate import SYS_CLOCK_NAME, FRAME_CLOCK_NAME
 
 # global wildcard imports to enable interactive object creation in one namespace
 # I'm so sorry.
-from organ import *
+from .organ import *
 # from hue_organ import *
-from rate import *
-from color import *
-from param_gen import *
+from .rate import *
+from .color import *
+from .param_gen import *
 
-from operator import add, sub, div, mod, mul
+from operator import add, sub, truediv as div, mod, mul
 
 class SavedShow(object):
     """Encapsulate the data required to save and load a show."""
@@ -174,7 +174,7 @@ class Show(object):
         cmd_type, payload = show_cmd
         if cmd_type == 'list':
             # return a list of the current named objects
-            return [ (key, type(val)) for key, val in NameRegistry().iteritems()]
+            return [ (key, type(val)) for key, val in NameRegistry().items()]
         elif cmd_type == 'cmd':
             # call a command on an existing object
             name, cmd_str = payload

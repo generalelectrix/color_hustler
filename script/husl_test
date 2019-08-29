@@ -10,7 +10,7 @@ new ConstantList([0, 0.2], name = 'offset generator')
 new DynamicModulator(get('offset generator'), add_hue_husl, name='offset modulator')
 cmd mod chain.append(get('offset modulator'))
 
-new Trigger(Rate(bpm=20.), name='note trig')
+new Trigger(Rate(bpm=120.), name='note trig')
 
 # new GaussianRandom(120, 20, name='trig jit')
 # new Twiddler(get('trig jit'),;

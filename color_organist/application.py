@@ -8,18 +8,18 @@ processes is difficult or impossible, so we're still bound by the GIL.
 """
 import traceback
 import cmd
-from Queue import Queue, Empty
+from queue import Queue, Empty
 from threading import Thread
 
 import mido
 
-from show import Show
+from .show import Show
 
-from organ import ColorOrgan, ColorOrganist
+from .organ import ColorOrgan, ColorOrganist
 #from hue_organ import HueOrgan
-from param_gen import ParameterGenerator, Modulator, Mutator, FXChain
-from color import ColorGenerator
-from rate import Trigger
+from .param_gen import ParameterGenerator, Modulator, Mutator, FXChain
+from .color import ColorGenerator
+from .rate import Trigger
 
 class Controller(cmd.Cmd):
     """cmd module style show controller.
@@ -28,8 +28,8 @@ class Controller(cmd.Cmd):
     """
     def __init__(self):
         cmd.Cmd.__init__(self)
-        print "Color Organist"
-        print "Using midi port {}.".format(mido.get_output_names()[0])
+        print("Color Organist")
+        print("Using midi port {}.".format(mido.get_output_names()[0]))
         # TODO: add port selection, mido makes this tricky because it doesn't
         # play nicely with threads.
         #
@@ -37,13 +37,13 @@ class Controller(cmd.Cmd):
         #    print "Please select a midi port."
         #    print str(mido.get_output_names()) + '\n'
         #    port = readline()
-        print "Starting empty show."
+        print("Starting empty show.")
         self.cmd_queue = Queue()
         self.resp_queue = Queue()
         show = Show(60., self.cmd_queue, self.resp_queue)
         self.show_thread = Thread(target=show.run)
         self.show_thread.start()
-        print "Show is running."
+        print("Show is running.")
         self.cmdloop()
 
     def emptyline(self):
@@ -70,19 +70,19 @@ class Controller(cmd.Cmd):
         try:
             (resp_err, resp) = self.resp_queue.get(timeout=timeout)
         except Empty:
-            print "The show did not respond to the command '{} {}'".format(cmd, payload)
+            print("The show did not respond to the command '{} {}'".format(cmd, payload))
             return (True, None)
         else:
             if resp_err:
-                print "An error occurred in response to the command '{} {}':".format(cmd, payload)
-                print resp
+                print("An error occurred in response to the command '{} {}':".format(cmd, payload))
+                print(resp)
             return (resp_err, resp)
 
     def do_quit(self, _):
         """Quit the application."""
         resp_err, resp = self.handle_command('appl', 'quit')
         if not resp_err:
-            print resp
+            print(resp)
             self.show_thread.join()
             quit()
 
@@ -92,13 +92,13 @@ class Controller(cmd.Cmd):
         """
         resp_err, resp = self.handle_command('appl', 'save', show_name)
         if not resp_err:
-            print "Saved show {}".format(show_name)
+            print("Saved show {}".format(show_name))
 
     def do_load(self, show_name):
         """Load a named show."""
         resp_err, resp = self.handle_command('appl', 'load', show_name)
         if not resp_err:
-            print "Loaded show {}".format(show_name)
+            print("Loaded show {}".format(show_name))
 
     def do_list(self, item_filter):
         """List named entities in the current show.
@@ -119,7 +119,7 @@ class Controller(cmd.Cmd):
                     'trigs': [Trigger]}
 
         if item_filter not in type_map:
-            print "Invalid filter: {}".format(item_filter)
+            print("Invalid filter: {}".format(item_filter))
             return
         resp_err, items = self.handle_command('show', 'list')
         if not resp_err:
@@ -127,7 +127,7 @@ class Controller(cmd.Cmd):
             for name, kind in items:
                 for type_filter in type_filters:
                     if issubclass(kind, type_filter):
-                        print str(name) + ': ' + str(kind)
+                        print(str(name) + ': ' + str(kind))
                         break
 
     def do_cmd(self, name_and_command):
@@ -143,12 +143,12 @@ class Controller(cmd.Cmd):
             # rejoin the rest of the command
             cmd = '.'.join(pieces[1:])
         except Exception as err:
-            print "An exception ocurred during command parsing: {}".format(err)
+            print("An exception ocurred during command parsing: {}".format(err))
             return
         else:
             resp_err, resp = self.handle_command('show', 'cmd', (name, cmd))
             if not resp_err and resp is not None:
-                print resp
+                print(resp)
 
     def do_new(self, cmd):
         """Create a new entity in the show environment.
@@ -192,5 +192,5 @@ class Controller(cmd.Cmd):
                         #    break
         except Exception:
             err = traceback.format_exc()
-            print "An error occurred during script execution, line {}\n".format(n)
-            print err
+            print("An error occurred during script execution, line {}\n".format(n))
+            print(err)
