@@ -289,21 +289,16 @@ def black():
 def white():
     return Color('rgb', (1.0, 1.0, 1.0))
 
-class ColorGenerator(object):
-    """Base class for color generators.
+# FIXME: this entire notion is silly, these aren't anything special, refactor
+# them away.
 
-    Really just used to allow type filtering.
-    """
-    pass
-
-
-class HSVColorGenerator(ColorGenerator):
-    """Random HSV color generation."""
-    def __init__(self, h_gen, s_gen, v_gen):
+class ColorGenerator:
+    def __init__(self, h_gen, s_gen, v_gen, colorspace='husl'):
         """Create a new random color generator."""
         self.h_gen = h_gen
         self.s_gen = s_gen
         self.v_gen = v_gen
+        self.colorspace = colorspace
 
     def get(self):
         """Get the next random color from this generator."""
@@ -311,27 +306,10 @@ class HSVColorGenerator(ColorGenerator):
         s_val = self.s_gen.get_constrained(0.0, 1.0, mode='fold')
         v_val = self.v_gen.get_constrained(0.0, 1.0, mode='fold')
 
-        return Color('hsv', (h_val, s_val, v_val))
+        return Color(self.colorspace, (h_val, s_val, v_val))
 
 
-class HUSLColorGenerator(ColorGenerator):
-    """Random HUSL color generation."""
-    def __init__(self, h_gen, s_gen, l_gen):
-        """Create a new random color generator."""
-        self.h_gen = h_gen
-        self.s_gen = s_gen
-        self.l_gen = l_gen
-
-    def get(self):
-        """Get the next random color from this generator."""
-        h_val = self.h_gen.get_constrained(0.0, 1.0, mode='wrap')
-        s_val = self.s_gen.get_constrained(0.0, 1.0, mode='fold')
-        l_val = self.l_gen.get_constrained(0.0, 1.0, mode='fold')
-
-        return Color('husl', (h_val, s_val, l_val))
-
-
-class ColorSwarm(ColorGenerator):
+class ColorSwarm:
     """Agglomerate multiple color generators."""
     def __init__(self, col_gens, random=False, seed=None):
         """Create a new ColorSwarm.
@@ -360,39 +338,3 @@ class ColorSwarm(ColorGenerator):
         col = self.gens[self.next].get()
         return col
 
-def nice_color_gen_hsv(start_color):
-    """Instance an aesthetically pleasing color generator.
-
-    start_color is an optional color to start the generator with.  At the moment,
-    this just sets the initial center of the hue generator.
-
-    Hue is driven by a gaussian with width of 0.1.
-    Saturation is driven by a gaussian centered at 1.0 with width 0.2.
-    Value is driven by a gaussian centered at 1.0 with width 0.2.
-    """
-    h_gen = pgen.GaussianRandom(start_color.hue_hsv, 0.1)
-    s_gen = pgen.GaussianRandom(1.0, 0.2)
-    b_gen = pgen.GaussianRandom(1.0, 0.2)
-    return HSVColorGenerator(h_gen, s_gen, b_gen)
-
-def nice_color_gen_husl(start_color):
-    """Instance an aesthetically pleasing color generator.
-
-    start_color is an optional color to start the generator with.  At the moment,
-    this just sets the initial center of the hue generator.
-
-    Hue is driven by a gaussian with width of 0.1.
-    Saturation is driven by a gaussian centered at 1.0 with width 0.2.
-    Level is driven by a gaussian centered at 0.5 with width 0.2.
-    """
-    h_gen = pgen.GaussianRandom(start_color.hue_husl, 0.1)
-    s_gen = pgen.GaussianRandom(1.0, 0.2)
-    l_gen = pgen.GaussianRandom(0.3, 0.2)
-    return HUSLColorGenerator(h_gen, s_gen, l_gen)
-
-def test_color_gen(start_color):
-    """Return a color generator that produces a constant color."""
-    h_gen = pgen.Constant(start_color.hue_hsv)
-    s_gen = pgen.Constant(start_color.sat_hsv)
-    v_gen = pgen.Constant(start_color.val_hsv)
-    return HSVColorGenerator(h_gen, s_gen, v_gen)

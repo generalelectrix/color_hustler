@@ -1,29 +1,27 @@
 """The show runtime environment."""
 import time
 import traceback
-from queue import Empty
+from queue import Empty, Queue
 
 import mido
 
 from .organ import ColorOrganist
-from .param_gen import Mutator
 from .rate import Trigger, Rate
 from . import frame_clock
 
 
 class Show(object):
     """Encapsulate the show runtime environment."""
-    def __init__(self, framerate, cmd_queue, resp_queue, midi_port):
+    def __init__(self, framerate, midi_port):
         self.render_trigger = Trigger(rate=Rate(hz=framerate), clock=time)
 
         self.entities = dict()
 
         # use sets to ensure items are only registered once
         self.organists = set()
-        self.mutators = set()
 
-        self.cmd_queue = cmd_queue
-        self.resp_queue = resp_queue
+        self.cmd_queue = Queue()
+        self.resp_queue = Queue()
 
         self.midi_port = midi_port
 
@@ -37,10 +35,6 @@ class Show(object):
         if name in self.entities:
             raise ValueError("Duplicate entity name: {}".format(name))
         self.entities[name] = entity
-        if isinstance(entity, ColorOrganist):
-            self.organists.add(entity)
-        if isinstance(entity, Mutator):
-            self.mutators.add(entity)
 
     def run(self):
         """Run the show application."""
@@ -63,10 +57,6 @@ class Show(object):
     def render(self):
         """Render the current frame to midi."""
         frame_clock.tick()
-
-        # apply the mutators
-        for mutator in self.mutators:
-            mutator.mutate()
 
         # command the organists to play
         for organist in self.organists:

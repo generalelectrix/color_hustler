@@ -120,93 +120,32 @@ class ConstantList(ParameterGenerator):
         self.index = (self.index + 1) % len(self.values)
         return self.values[self.index]
 
+class Noise(ParameterGenerator):
 
-class UniformRandom(ParameterGenerator):
-    """Generate unformly-distributed random numbers."""
-    def __init__(self, center, width, seed=None):
-        """Create a new uniform random number generator.
-
-        Will generate random numbers on the interval [center-width, center+width).
-
+    UNIFORM = 'uniform'
+    GAUSSIAN = 'gaussian'
+    """Generate random numbers."""
+    def __init__(self, mode, center, width, seed=None):
+        """
         Args:
+            mode: NoiseMode
             center: the centroid of the generated number cloud
-            width: the half-width of the generated number cloud
+            width: the half-width or standard deviation of the generated number cloud
             seed (optional): specify the seed for this random number generator.
         """
+        self.mode = mode
         self.center = center
         self.width = width
-        self.gen = Random()
+        self._gen = Random()
         if seed is not None:
-            self.gen.seed(seed)
+            self._gen.seed(seed)
 
     def get(self):
-        """Generate the next random value."""
-        return self.gen.uniform(self.min_val, self.max_val)
-
-    @property
-    def min_val(self):
-        return self.center - self.width
-
-    @property
-    def max_val(self):
-        return self.center + self.width
-
-class GaussianRandom(ParameterGenerator):
-    """Generate gaussian-distributed random numbers."""
-    def __init__(self, center, width, seed=None):
-        """Create a new gaussian random number generator.
-
-        Will generate random numbers about center with standard deviation width.
-
-        Args:
-            center: the centroid of the generated number cloud
-            width: the standard deviation of the generated number cloud
-            seed (optional): specify the seed for this random number generator.
-        """
-        self.center = center
-        self.width = width
-        self.gen = Random()
-        if seed is not None:
-            self.gen.seed(seed)
-
-    def get(self):
-        """Generate the next random value."""
-        return self.gen.gauss(self.center, self.width)
-
-class Diffusor(ParameterGenerator):
-    """Generate diffusive motion in a random walk style.
-
-    When polled for a value, a diffusor returns a random value selected from
-    a gaussian distribution centered about zero whose standard deviation increases
-    with sqrt(time), mimicking a random walk in the continuous limit.
-
-    After one period given by rate, the full-width half-max of this distribution
-    is defined to be 1.0, implying what amounts to a completely random shift.
-    """
-    def __init__(self, rate, seed=None):
-        """Initialize a diffusor with a rate."""
-        self.rate = rate
-        self.last_called = frame_clock.time()
-        self.rand_gen = GaussianRandom(0.0, 0.0, seed)
-
-    def get(self):
-        """Get the integrated diffusive shift."""
-        now = frame_clock.time()
-        elapsed = now - self.last_called
-        width = math.sqrt(elapsed / (4*self.rate.period))
-        self.rand_gen.width = width
-        self.last_called = now
-        return self.rand_gen.get()
-
-class IntegratingDiffusor(ParameterGenerator):
-    """Integrate the output of a Diffusor for use as a modulator."""
-    def __init__(self, diffusor):
-        self.diff = diffusor
-        self.accum = 0
-
-    def get(self):
-        self.accum += self.diff.get()
-        return self.accum
+        if self.mode == self.GAUSSIAN:
+            return self._gen.gauss(self.center, self.width)
+        if self.mode == self.UNIFORM:
+            return self._gen.uniform(
+                self.center - self.width, self.center + self.width)
 
 
 class Function(ParameterGenerator):
@@ -239,7 +178,6 @@ class Function(ParameterGenerator):
 
 class Modulator(object):
     """Base class for tools to modulate a parameter stream."""
-    #@register_name
     def __init__(self, preprocessor=None, postprocessor=None):
         """Register pre- and post-processors for value extraction from complex streams.
 
@@ -334,72 +272,3 @@ class BrickwallLimiter(Modulator):
     def modulation_operation(self, signal):
         return self.operation(signal, self.min_limit, self.max_limit)
 
-# --- parameter generator mutators ---
-
-class Mutator(object):
-    """Base class for tools to mutate other things once per frame."""
-    def mutate(self):
-        """Apply the mutation operation to the target."""
-        raise NotImplementedError("Inheriting classes must override this method.")
-
-class Twiddler(Mutator):
-    """Generic parameter twiddler."""
-    def __init__(self, twiddle_gen, operation, target):
-        """Create a new twiddler.
-
-        Args:
-            param_gen: a parameter generator creating the twiddle value
-            operation: a function that takes a param gen as the first argument
-                and the twiddle value as the second argument.  this operation
-                is what applies the twiddle to the param gen.
-        """
-        self.twiddle_gen = twiddle_gen
-        self.operation = operation
-        self.target = target
-
-    def mutate(self):
-        self.operation(self.target, self.twiddle_gen.get())
-
-# --- chains ---
-
-class FXChain(object):
-    """Base class for linear effects chains."""
-    def __init__(self, head):
-        """Initialize a linear effects chain with a source."""
-        if not hasattr(head, 'get'):
-            raise TypeError("The head of an effects chain must have "
-                                       "a get method.")
-        self.chain = []
-        self.source = head
-
-    def append(self, effect):
-        """Add an effect to the chain."""
-        self.chain.append(effect)
-
-    def pop(self, index=None):
-        """Remove and return an effect from the chain."""
-        try:
-            if index is not None:
-                mod = self.chain.pop(index)
-            else:
-                mod = self.chain.pop()
-        except IndexError:
-            return None
-        return mod
-
-    def insert(self, index, effect):
-        """Insert a effect at the specified index, shifting to the right.
-
-        If index is larger than the current chain length, append.
-        """
-        self.chain.insert(index, effect)
-
-class ModulationChain(FXChain, ParameterGenerator):
-    """Encapsulate a linear chain of parameter manipulation."""
-
-    def get(self):
-        """Render the whole modulation chain."""
-        val = self.source.get()
-        for mod in self.chain:
-            val = mod.modulate(val)
-        return val

@@ -53,7 +53,7 @@ class Trigger(object):
 
         Uses the name registration system to get the clock.
         """
-        self.rate = rate
+        self._rate = rate
         if clock is None:
             from . import frame_clock as clock
 
@@ -62,7 +62,27 @@ class Trigger(object):
 
     @property
     def period(self):
-        return self.rate.period
+        return self._rate.period
+
+    @period.setter
+    def period(self, period):
+        self._rate.period = period
+
+    @property
+    def hz(self):
+        return self._rate.hz
+
+    @hz.setter
+    def hz(self, hz):
+        self._rate.hz = hz
+
+    @property
+    def bpm(self):
+        return self._rate.bpm
+
+    @bpm.setter
+    def bpm(self, bpm):
+        self._rate.bpm = bpm
 
     def trigger(self):
         """Return True if it is time to trigger, and reset trigger clock."""
