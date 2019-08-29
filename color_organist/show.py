@@ -13,6 +13,7 @@ from . import frame_clock
 class Show(object):
     """Encapsulate the show runtime environment."""
     def __init__(self, framerate, midi_port):
+        frame_clock.tick()
         self.render_trigger = Trigger(rate=Rate(hz=framerate), clock=time)
 
         self.entities = dict()
@@ -93,6 +94,9 @@ class Show(object):
         if cmd_type == 'stop':
             self.running = False
             return "Show is stopping."
+
+        if cmd_type == 'list':
+            return "Show entities: {}".format(", ".join(self.entities))
 
         # otherwise, assume this is a name.property command and try to run it
         name, attr = cmd_type.split('.')

@@ -3,7 +3,7 @@
 # This is a stopgap put in place to ease refactoring.
 import time as systime
 
-# don't set the initial time without ticking once
+# this should be properly initialized on the first frame.
 _now = None
 
 def time():
