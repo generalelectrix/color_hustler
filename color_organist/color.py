@@ -4,7 +4,7 @@ from husl import husl_to_rgb as husl_to_rgb_args
 
 from random import Random
 
-import param_gen as pgen
+from . import param_gen as pgen
 
 def rgb_to_husl(coordinates):
     # fix the stupid range used for HUSL

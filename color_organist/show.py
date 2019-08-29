@@ -1,16 +1,13 @@
 """The show runtime environment."""
 import traceback
-from Queue import Empty
+from queue import Empty
 
 import mido
 
-# global wildcard imports to enable interactive object creation in one namespace
-# I'm so sorry.
-from organ import *
-# from hue_organ import *
-from rate import Trigger, Rate
-from color import *
-from param_gen import *
+from .organ import *
+from .rate import Trigger, Rate
+from .color import *
+from .param_gen import *
 from . import frame_clock
 
 import time
@@ -86,4 +83,3 @@ class Show(object):
                     err = True
                     resp = traceback.format_exc()
                 self.resp_queue.put((err, resp))
-
