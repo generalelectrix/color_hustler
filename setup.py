@@ -6,7 +6,7 @@ try:
 except ImportError:
     from distutils.core import setup
 
-requires = ['mido', 'dill', 'husl', 'python-rtmidi']
+requires = ['mido', 'husl', 'python-rtmidi', 'websockets']
 
 setup(
     name='color_organist',

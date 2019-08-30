@@ -2,8 +2,11 @@
 
 Provides color selection with stochastic variants on each color parameter.
 """
+import asyncio
+import websockets
 import mido
 import cmd
+import json
 from queue import Empty
 from threading import Thread
 from .color import ColorGenerator
@@ -39,6 +42,24 @@ def initialize(midi_port_name, framerate=60.0):
 
     return show
 
+def run_websocket_server(port, cmd_queue):
+    """Start up a simple websocket server that deserializes messages."""
+    async def handle(websocket, path):
+        async for message in websocket:
+            try:
+                payload = json.loads(message, parse_int=float)
+                print("Handling message", payload)
+            except ValueError:
+                print("Could not deserialize message as json:", message)
+                continue
+            cmd_queue.put(payload)
+
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+    start_server = websockets.serve(handle, "localhost", port)
+    asyncio.get_event_loop().run_until_complete(start_server)
+    asyncio.get_event_loop().run_forever()
+    # FIXME no quit mechanism
 
 class Controller(cmd.Cmd):
     """cmd module style show controller.
@@ -54,6 +75,11 @@ class Controller(cmd.Cmd):
 
         self.cmd_queue = show.cmd_queue
         self.resp_queue = show.resp_queue
+
+        # launch the websocket server
+        self.socket_thread = Thread(
+            target=lambda: run_websocket_server(4321, show.cmd_queue))
+        self.socket_thread.start()
 
         self.show_thread = Thread(target=show.run)
         self.show_thread.start()
@@ -75,7 +101,6 @@ class Controller(cmd.Cmd):
         if resp_err:
             print("An error occurred in response to the command '{} {}':".format(cmd, payload))
         print(resp)
-
 
     def do_quit(self, _):
         """Quit the application."""
