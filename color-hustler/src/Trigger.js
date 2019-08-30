@@ -1,11 +1,11 @@
 import React from 'react'
-import Slider from './Slider'
+import { StatefulSlider } from './Slider'
 
 const Trigger = ({name, initialBpm, dispatch}) => {
   return (
     <div>
       <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
-      <Slider
+      <StatefulSlider
         label="bpm"
         initialValue={initialBpm}
         min={0.001}

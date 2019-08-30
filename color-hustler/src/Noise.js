@@ -1,5 +1,5 @@
 import React from 'react'
-import Slider from './Slider'
+import { Slider } from './Slider'
 
 const GAUSSIAN = 'gaussian'
 const UNIFORM = 'uniform'
@@ -7,11 +7,17 @@ const UNIFORM = 'uniform'
 const Noise = ({name, initialCenter, dispatch}) => {
 
   const [mode, setMode] = React.useState(GAUSSIAN)
+  const [center, setCenter] = React.useState(initialCenter)
+  const [width, setWidth] = React.useState(0.0)
+
+  const updateAndSend = (parameter, value, stateUpdater) => {
+    stateUpdater(value)
+    dispatch(name, parameter, value)
+  }
 
   const updateMode = e => {
     const v = e.target.value
-    setMode(v)
-    dispatch(name, "mode", v)
+    updateAndSend("mode", v, setMode)
   }
 
   return (
@@ -23,12 +29,12 @@ const Noise = ({name, initialCenter, dispatch}) => {
       </select>
       <Slider
         label="center"
-        initialValue={initialCenter}
-        onChange={v => dispatch(name, "center", v)} />
+        value={center}
+        onChange={v => updateAndSend("center", v, setCenter)} />
       <Slider
         label="width"
-        initialValue={0.0}
-        onChange={v => dispatch(name, "width", v)} />
+        value={width}
+        onChange={v => updateAndSend("width", v, setWidth)} />
     </div>
   )
 }
