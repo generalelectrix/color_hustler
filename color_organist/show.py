@@ -5,7 +5,6 @@ from queue import Empty, Queue
 
 import mido
 
-from .organ import ColorOrganist
 from .rate import Trigger, Rate
 from . import frame_clock
 
@@ -17,8 +16,6 @@ class Show(object):
         self.render_trigger = Trigger(rate=Rate(hz=framerate), clock=time)
 
         self.entities = dict()
-
-        # use sets to ensure items are only registered once
         self.organists = set()
 
         self.cmd_queue = Queue()
