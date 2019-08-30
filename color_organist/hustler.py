@@ -48,7 +48,6 @@ def run_websocket_server(port, cmd_queue):
         async for message in websocket:
             try:
                 payload = json.loads(message, parse_int=float)
-                print("Handling message", payload)
             except ValueError:
                 print("Could not deserialize message as json:", message)
                 continue

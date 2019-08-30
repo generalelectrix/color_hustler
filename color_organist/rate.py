@@ -1,5 +1,6 @@
 """Entities relating to the progression of time."""
 import time
+from .controllable import Controllable
 
 class Rate(object):
     """Helper class for working with rates."""
@@ -43,8 +44,10 @@ class Rate(object):
     def period(self, period):
         self.hz = 1.0 / float(period)
 
-class Trigger(object):
+class Trigger(Controllable):
     """Polling-based scheduling of an operation."""
+    parameters = dict(period=float, hz=float, bpm=float)
+
     def __init__(self, rate, clock=None):
         """Create a new Trigger.
 

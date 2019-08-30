@@ -1,7 +1,7 @@
 import React from 'react';
 
-const Slider = ({label, onChange}) => {
-  const [value, setValue] = React.useState(0.0)
+const Slider = ({label, initialValue, onChange}) => {
+  const [value, setValue] = React.useState(initialValue)
 
   const handleChange = e => {
     setValue(e.target.value)

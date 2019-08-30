@@ -8,14 +8,14 @@ const socket = new WebSocket('ws://localhost:4321')
 socket.onopen = _ => console.log("Opened websocket.")
 socket.onmessage = event => console.log(event)
 
-const dispatch = message => {
-  socket.send(message)
+const sendMessage = (name, attr, payload) => {
+  socket.send(JSON.stringify([name + '.' + attr, payload]))
 }
 
 function App() {
   return (
     <div className="App">
-      <Noise name="hue" dispatch={dispatch} />
+      <Noise name="hue" initialCenter={0.0} dispatch={sendMessage} />
     </div>
   );
 }

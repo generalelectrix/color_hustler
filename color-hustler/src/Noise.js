@@ -4,18 +4,14 @@ import Slider from './Slider'
 const GAUSSIAN = 'gaussian'
 const UNIFORM = 'uniform'
 
-const Noise = ({name, dispatch}) => {
-
-  const sendMessage = (attr, payload) => {
-    dispatch(JSON.stringify([name + '.' + attr, payload]))
-  }
+const Noise = ({name, initialCenter, dispatch}) => {
 
   const [mode, setMode] = React.useState(GAUSSIAN)
 
   const updateMode = e => {
     const v = e.target.value
     setMode(v)
-    sendMessage("mode", v)
+    dispatch(name, "mode", v)
   }
 
   return (
@@ -25,8 +21,14 @@ const Noise = ({name, dispatch}) => {
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>
       </select>
-      <Slider label="center" onChange={v => sendMessage("center", v)} />
-      <Slider label="width" onChange={v => sendMessage("width", v)} />
+      <Slider
+        label="center"
+        initialValue={initialCenter}
+        onChange={v => dispatch(name, "center", v)} />
+      <Slider
+        label="width"
+        initialValue={0.0}
+        onChange={v => dispatch(name, "width", v)} />
     </div>
   )
 }
