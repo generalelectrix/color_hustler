@@ -1,6 +1,7 @@
 import math
 from random import Random
 from . import frame_clock
+from .controllable import Controllable
 
 # --- numeric helper functions ---
 
@@ -71,7 +72,7 @@ _constrainers = {
 
 # --- parameter generators ---
 
-class ParameterGenerator(object):
+class ParameterGenerator(Controllable):
     """Base class for parameter generator objects.
 
     Any parameter generator which is capable of producing a value on its own
@@ -96,14 +97,26 @@ class ParameterGenerator(object):
 
 class Constant(ParameterGenerator):
     """Helper class to generate constant values."""
+    parameters = dict(center=float)
+
     def __init__(self, center):
         self.center = center
 
     def get(self):
         return self.center
 
+def validate_constant_list(items):
+    try:
+        iter(items)
+    except TypeError:
+        raise ValueError("Input to ConstantList must be iterable; got {}".format(items))
+
+    return [float(i) for i in items]
+
 class ConstantList(ParameterGenerator):
     """Choose from a list of constant values."""
+    parameters = dict(values=validate_constant_list, random=bool)
+
     def __init__(self, values, random=False, seed=None):
         self.values = values
         self.random = random
@@ -120,7 +133,13 @@ class ConstantList(ParameterGenerator):
         self.index = (self.index + 1) % len(self.values)
         return self.values[self.index]
 
+def validate_mode(mode):
+    if mode not in (Noise.UNIFORM, Noise.GAUSSIAN):
+        raise ValueError("Invalid random mode: {}".format(mode))
+    return mode
+
 class Noise(ParameterGenerator):
+    parameters = dict(mode=validate_mode, center=float, width=float)
 
     UNIFORM = 'uniform'
     GAUSSIAN = 'gaussian'

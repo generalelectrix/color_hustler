@@ -32,6 +32,8 @@ class Show(object):
         """
         if name in self.entities:
             raise ValueError("Duplicate entity name: {}".format(name))
+        if not hasattr(entity, 'set_parameter'):
+            raise ValueError("{} is not controllable.".format(entity))
         self.entities[name] = entity
 
     def run(self):
@@ -96,15 +98,11 @@ class Show(object):
             return "Show entities: {}".format(", ".join(self.entities))
 
         # otherwise, assume this is a name.property command and try to run it
-        name, attr = cmd_type.split('.')
+        name, parameter = cmd_type.split('.')
         try:
             entity = self.entities[name]
         except KeyError:
             raise ValueError("No entity with name '{}'.".format(name))
 
-        if not hasattr(entity, attr):
-            raise ValueError("{} has no attribute '{}'.".format(name, attr))
-
-        setattr(entity, attr, payload)
-
+        entity.set_parameter(parameter, payload)
         return None
