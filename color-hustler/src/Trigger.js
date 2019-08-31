@@ -3,7 +3,7 @@ import { StatefulSlider } from './Slider'
 
 const Trigger = ({name, initialBpm, dispatch}) => {
   return (
-    <div class="flexcol">
+    <div className="flexcol">
       <span>{name}</span>
       <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
       <StatefulSlider

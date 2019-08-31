@@ -32,10 +32,13 @@ const ConstantList = ({name, dispatch}) => {
         pattern=""
         onChange={e => setValues(e.target.value)}
         onKeyDown={handleKeyDown} />
-      <br/>
       <label>
-        randomize?
-        <button type="checkbox" onChange={handleRandom} checked={random}/>
+        randomize
+        <input
+          type="checkbox"
+          style={{width: 'auto'}}
+          onChange={handleRandom}
+          checked={random}/>
       </label>
     </div>
 
