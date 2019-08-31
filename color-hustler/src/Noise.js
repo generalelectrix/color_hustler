@@ -22,7 +22,7 @@ const Noise = ({name, initialCenter, dispatch}) => {
 
   return (
     <div class="panel">
-      {name}
+      <span>{name}</span>
       <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>

@@ -1,4 +1,5 @@
 import React from 'react';
+import './Slider.css';
 
 export const StatefulSlider = ({label, onChange, initialValue=0.0, min, max, showValue}) => {
   const [value, setValue] = React.useState(initialValue)
@@ -23,7 +24,7 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=fals
   const handleChange = e => onChange(e.target.value)
 
   return (
-    <label>
+    <div class="slider">
       {label}
       <input
         type="range"
@@ -41,6 +42,6 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=fals
           step={0.00001}
           value={value}
           onChange={handleChange}/>}
-    </label>
+    </div>
   )
 }

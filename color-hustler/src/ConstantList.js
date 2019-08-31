@@ -25,12 +25,14 @@ const ConstantList = ({name, dispatch}) => {
   }
 
   return (
-    <div>
+    <div className="panel">
+      <span>{name}</span>
       <input
         type="text"
         pattern=""
         onChange={e => setValues(e.target.value)}
         onKeyDown={handleKeyDown} />
+      <br/>
       <label>
         randomize?
         <button type="checkbox" onChange={handleRandom} checked={random}/>

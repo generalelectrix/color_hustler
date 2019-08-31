@@ -1,8 +1,21 @@
 .App {
-    display: grid;
+
+}
+
+.chain {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
 }
 
 .panel {
+    display: inline-block;
     border-style: outset;
     border-radius: 5px;
+    padding: 5px;
+    margin: 5px;
+}
+
+.panel > span {
+    display: block;
 }
