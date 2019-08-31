@@ -1,3 +1,3 @@
 # color_hustler
 
-[(./readme.png?raw=true)]
+![every damn day](./readme.png?raw=true)
