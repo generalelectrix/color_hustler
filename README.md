@@ -1,3 +1,3 @@
 # color_hustler
 
-!(/readme.png?raw=true)
+!(readme.png?raw=true)
