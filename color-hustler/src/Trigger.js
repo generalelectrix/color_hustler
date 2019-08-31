@@ -2,9 +2,23 @@ import React from 'react'
 import { StatefulSlider } from './Slider'
 
 const Trigger = ({name, initialBpm, dispatch}) => {
+  const [active, setActive] = React.useState(true)
+
+  const handleActive = e => {
+    setActive(e.target.checked)
+    dispatch(name, "active", e.target.checked)
+  }
+
   return (
     <div className="flexcol">
-      <span>{name}</span>
+      <span>
+        trigger
+        <input
+          type="checkbox"
+          style={{margin: '2px', width: '20px', height: '20px'}}
+          onChange={handleActive}
+          checked={active} />
+      </span>
       <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
       <StatefulSlider
         label="bpm"

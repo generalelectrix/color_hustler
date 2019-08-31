@@ -26,26 +26,33 @@ def initialize(midi_port_name, framerate=60.0):
         show.register_entity(generator, name)
         return generator
 
-    # build modulation chains for each color coordinate
-    h_gen = add_random_source('hue', center=0.0)
-    s_gen = add_random_source('saturation', center=1.0)
-    l_gen = add_random_source('lightness', center=0.5)
+    def create_chain(index):
+        def label(name):
+            return name + str(index)
 
-    # allow constant list modulation of hue
-    hue_offset_list = ConstantList([0.0])
-    show.register_entity(hue_offset_list, 'hue_offsets')
 
-    offset_hue = Modulator(source=h_gen, modulation_gen=hue_offset_list)
-    show.register_entity(offset_hue, 'hue_modulator')
+        # build modulation chains for each color coordinate
+        h_gen = add_random_source(label('hue'), center=0.0)
+        s_gen = add_random_source(label('saturation'), center=1.0)
+        l_gen = add_random_source(label('lightness'), center=0.5)
 
-    # wire these things up to an organist
-    color_gen = ColorGenerator(h_gen=offset_hue, s_gen=s_gen, v_gen=l_gen)
+        # allow constant list modulation of hue
+        hue_offset_list = ConstantList([0.0])
+        show.register_entity(hue_offset_list, label('hue_offsets'))
 
-    note_trig = Trigger(rate=Rate(bpm=60.0))
-    show.register_entity(note_trig, 'note_trigger')
+        offset_hue = Modulator(source=h_gen, modulation_gen=hue_offset_list)
+        show.register_entity(offset_hue, label('hue_modulator'))
 
-    organist = ColorOrganist(ctrl_channel=1, note_trig=note_trig, col_gen=color_gen)
-    show.organists.add(organist)
+        color_gen = ColorGenerator(h_gen=offset_hue, s_gen=s_gen, v_gen=l_gen)
+
+        note_trig = Trigger(rate=Rate(bpm=60.0))
+        show.register_entity(note_trig, label('trigger'))
+        organist = ColorOrganist(ctrl_channel=index, note_trig=note_trig, col_gen=color_gen)
+        show.organists.add(organist)
+
+    create_chain(0)
+    create_chain(1)
+    create_chain(2)
 
     return show
 

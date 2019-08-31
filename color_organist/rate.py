@@ -46,7 +46,7 @@ class Rate(object):
 
 class Trigger(Controllable):
     """Polling-based scheduling of an operation."""
-    parameters = dict(period=float, hz=float, bpm=float, reset=bool)
+    parameters = dict(period=float, hz=float, bpm=float, reset=bool, active=bool)
 
     def __init__(self, rate, clock=None):
         """Create a new Trigger.
@@ -62,6 +62,7 @@ class Trigger(Controllable):
 
         self.clock = clock
         self.last_trig = clock.time() - self.period
+        self.active = True
 
     @property
     def period(self):
@@ -97,6 +98,9 @@ class Trigger(Controllable):
 
     def trigger(self):
         """Return True if it is time to trigger, and reset trigger clock."""
+        if not self.active:
+            return False
+
         now = self.clock.time()
         if self._time_until_trig(now) <= 0.0:
             self.last_trig = now

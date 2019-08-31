@@ -1,7 +1,7 @@
 import React from 'react'
 // Quick and dirty control over constant list driven modulators.
 
-const ConstantList = ({name, dispatch}) => {
+const ConstantList = ({name, dispatch, displayName}) => {
 
   const [values, setValues] = React.useState("")
   const [random, setRandom] = React.useState(false)
@@ -26,7 +26,7 @@ const ConstantList = ({name, dispatch}) => {
 
   return (
     <div className="flexcol">
-      <span>{name}</span>
+      <span>{displayName || name}</span>
       <input
         type="text"
         onChange={e => setValues(e.target.value)}
@@ -35,7 +35,6 @@ const ConstantList = ({name, dispatch}) => {
         randomize
         <input
           type="checkbox"
-          style={{width: 'auto'}}
           onChange={handleRandom}
           checked={random}/>
       </label>

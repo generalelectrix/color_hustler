@@ -4,7 +4,7 @@ import { Slider } from './Slider'
 const GAUSSIAN = 'gaussian'
 const UNIFORM = 'uniform'
 
-const Noise = ({name, initialCenter, dispatch}) => {
+const Noise = ({name, displayName, initialCenter, dispatch}) => {
 
   const [mode, setMode] = React.useState(GAUSSIAN)
   const [center, setCenter] = React.useState(initialCenter)
@@ -22,7 +22,7 @@ const Noise = ({name, initialCenter, dispatch}) => {
 
   return (
     <div className="flexcol">
-      <span>{name}</span>
+      <span>{displayName || name}</span>
       <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>
