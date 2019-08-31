@@ -4,12 +4,14 @@ Provides color selection with stochastic variants on each color parameter.
 """
 import asyncio
 import concurrent.futures
-import websockets
-import mido
 import cmd
 import json
-from queue import Empty, Queue
+from queue import Queue
 from threading import Thread
+
+import mido
+import websockets
+
 from .color import ColorGenerator
 from .organ import ColorOrganist
 from .param_gen import Noise, ConstantList, Modulator
