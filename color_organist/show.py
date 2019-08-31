@@ -19,11 +19,13 @@ class Show(object):
         self.organists = set()
 
         self.cmd_queue = Queue()
-        self.resp_queue = Queue()
+        # callables that are passed command responses
+        self.responders = []
 
         self.midi_port = midi_port
 
         self.running = False
+        self.debug = False
 
     def register_entity(self, entity, name):
         """Add a named entity to the show runtime environment.
@@ -78,31 +80,40 @@ class Show(object):
                 # fine if we didn't get a control event
                 pass
             else:
-                err = False
                 # try to process the command, if any error just send
                 # a reply and continue
                 try:
                     resp = self.process_command(cmd)
                 except Exception:
-                    err = True
-                    resp = traceback.format_exc()
-                self.resp_queue.put((err, resp))
+                    resp = ('error', traceback.format_exc())
+
+                if resp is not None:
+                    for respond in self.responders:
+                        respond(resp)
 
     def process_command(self, cmd):
         cmd_type, payload = cmd
+
+        if self.debug:
+            print("Handling command", cmd)
+
         if cmd_type == 'stop':
             self.running = False
-            return "Show is stopping."
+            return 'message', "Show is stopping."
 
         if cmd_type == 'list':
-            return "Show entities: {}".format(", ".join(self.entities))
+            return 'message', "Show entities: {}".format(", ".join(self.entities))
+
+        if cmd_type == 'debug':
+            self.debug = payload
+            return 'message', "Debug: {}".format(payload)
 
         # otherwise, assume this is a name.property command and try to run it
         name, parameter = cmd_type.split('.')
         try:
             entity = self.entities[name]
         except KeyError:
-            raise ValueError("No entity with name '{}'.".format(name))
+            return 'message', "No entity with name '{}'.".format(name)
 
         entity.set_parameter(parameter, payload)
         return None

@@ -1,7 +1,7 @@
 import math
 from random import Random
 from . import frame_clock
-from .controllable import Controllable
+from .controllable import Controllable, validate_string_constant
 
 # --- numeric helper functions ---
 
@@ -111,7 +111,10 @@ def validate_constant_list(items):
     except TypeError:
         raise ValueError("Input to ConstantList must be iterable; got {}".format(items))
 
-    return [float(i) for i in items]
+    values = [float(i) for i in items]
+    if not values:
+        raise ValueError("Must provide at least one value.")
+    return values
 
 class ConstantList(ParameterGenerator):
     """Choose from a list of constant values."""
@@ -139,10 +142,13 @@ def validate_mode(mode):
     return mode
 
 class Noise(ParameterGenerator):
-    parameters = dict(mode=validate_mode, center=float, width=float)
-
     UNIFORM = 'uniform'
     GAUSSIAN = 'gaussian'
+
+    parameters = dict(
+        mode=validate_string_constant([UNIFORM, GAUSSIAN], "noise mode"),
+        center=float,
+        width=float)
     """Generate random numbers."""
     def __init__(self, mode, center, width, seed=None):
         """
@@ -165,6 +171,7 @@ class Noise(ParameterGenerator):
         if self.mode == self.UNIFORM:
             return self._gen.uniform(
                 self.center - self.width, self.center + self.width)
+        raise ValueError("Unknown noise mode: {}".format(self.mode))
 
 
 class Function(ParameterGenerator):
@@ -195,83 +202,40 @@ class Function(ParameterGenerator):
 
 # --- modulators ---
 
-class Modulator(object):
-    """Base class for tools to modulate a parameter stream."""
-    def __init__(self, preprocessor=None, postprocessor=None):
-        """Register pre- and post-processors for value extraction from complex streams.
+class Modulator(ParameterGenerator):
+    """Modulate a parameter stream using another."""
+    ADD = 'add'
+    SUBTRACT = 'subtract'
+    MULTIPLY = 'multiply'
 
-        Args:
-            preprocessor: a function that takes the input stream and returns the value
-                on which to run the modulation operation
-            postprocessor: a function that takes the original input stream and the modulated
-                value and returns the modulated stream.
-        """
-        self.preprocessor = preprocessor
-        self.postprocessor = postprocessor
+    parameters = dict(
+        operation=validate_string_constant([ADD, SUBTRACT, MULTIPLY], "modulation mode"))
 
-    def modulation_operation(self, signal):
-        """Apply the modulation operation to the signal.
-
-        Abstract method.
-        """
-        raise NotImplementedError("Inheriting classes must override this method.")
-
-    def modulate(self, signal):
-        """Apply the pre- and post-processors astride the modulation operation."""
-        if self.preprocessor:
-            value = self.preprocessor(signal)
-        else:
-            value = signal
-
-        mod_value = self.modulation_operation(value)
-
-        if self.postprocessor:
-            mod_value = self.postprocessor(signal, mod_value)
-
-        return mod_value
-
-class StaticModulator(Modulator):
-    """Use a fixed value to modulate a signal.
-
-    Some uses of this class are things like adding fixed offsets.
-    """
-    def __init__(self, value, operation, **kwargs):
-        """Create a modifier with a static value and operation.
-
-        Args:
-            value: the value to pass to operation
-            operation: a function that takes the signal as the first
-                argument and the fixed value as the second argument and returns the
-                modulated value.
-        """
-        super(StaticModulator, self).__init__(**kwargs)
-        self.value = value
+    def __init__(self, source, modulation_gen, operation=ADD):
+        self.source = source
+        self.modulation_gen = modulation_gen
         self.operation = operation
 
-    def modulation_operation(self, signal):
-        return self.operation(signal, self.value)
+    def get(self):
+        input_val = self.source.get()
+        mod_val = self.modulation_gen.get()
 
-class DynamicModulator(Modulator):
-    """Use another parameter generator to modulate a signal."""
-    def __init__(self, pgen, operation, **kwargs):
-        """Create a modifier with a dynamic value and operation.
+        if self.operation == self.ADD:
+            return input_val + mod_val
+        if self.operation == self.SUBTRACT:
+            return input_val - mod_val
+        if self.operation == self.MULTIPLY:
+            return input_val * mod_val
 
-        Args:
-            pgen: the parameter generator use
-            operation: a function that takes a signal value as the first
-                argument and the dynamic value as the second argument and returns the
-                modulated value.
-        """
-        super(DynamicModulator, self).__init__(**kwargs)
-        self.pgen = pgen
-        self.operation = operation
+        raise ValueError("Unknown modulation operation: {}".format(self.operation))
 
-    def modulation_operation(self, signal):
-        return self.operation(signal, self.pgen.get())
 
-class BrickwallLimiter(Modulator):
+class BrickwallLimiter(ParameterGenerator):
     """Hard-limit a parameter to be within certain bounds."""
-    def __init__(self, min_limit=None, max_limit=None, clip_operation=clamp, **kwargs):
+    parameters = dict(
+        operation=validate_string_constant(_constrainers.keys(), "limiter mode"))
+
+    def __init__(self, source, min_limit=None, max_limit=None, clip_operation='clip'):
         """Create a new brickwall limiter.
 
         Args:
@@ -279,15 +243,13 @@ class BrickwallLimiter(Modulator):
                 minimum limit is imposed.
             max_limit: the maximum value this parameter may take.  If None, no
                 maximum limit is imposed.
-            clip_operation: a function with the signature
-                f(value, min_limit, max_limit) -> modulated value
-                default is clamp
+            clip_operation: 'fold', 'clip', or 'wrap'
         """
-        super(BrickwallLimiter, self).__init__(**kwargs)
+        self.source = source
         self.min_limit = min_limit
         self.max_limit = max_limit
         self.operation = clip_operation
 
-    def modulation_operation(self, signal):
-        return self.operation(signal, self.min_limit, self.max_limit)
-
+    def get(self):
+        return _constrainers[self.operation](
+            self.source.get(), self.min_limit, self.max_limit)

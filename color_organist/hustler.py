@@ -3,18 +3,18 @@
 Provides color selection with stochastic variants on each color parameter.
 """
 import asyncio
+import concurrent.futures
 import websockets
 import mido
 import cmd
 import json
-from queue import Empty
+from queue import Empty, Queue
 from threading import Thread
 from .color import ColorGenerator
 from .organ import ColorOrganist
-from .param_gen import Noise
+from .param_gen import Noise, ConstantList, Modulator
 from .rate import Trigger, Rate
 from .show import Show
-
 
 def initialize(midi_port_name, framerate=60.0):
     midi_port = mido.open_output(midi_port_name)
@@ -31,10 +31,17 @@ def initialize(midi_port_name, framerate=60.0):
     s_gen = add_random_source('saturation', center=1.0)
     l_gen = add_random_source('lightness', center=0.5)
 
-    # wire these things up to an organist
-    color_gen = ColorGenerator(h_gen=h_gen, s_gen=s_gen, v_gen=l_gen)
+    # allow constant list modulation of hue
+    hue_offset_list = ConstantList([0.0])
+    show.register_entity(hue_offset_list, 'hue_offsets')
 
-    note_trig = Trigger(rate=Rate(hz=1.0))
+    offset_hue = Modulator(source=h_gen, modulation_gen=hue_offset_list)
+    show.register_entity(offset_hue, 'hue_modulator')
+
+    # wire these things up to an organist
+    color_gen = ColorGenerator(h_gen=offset_hue, s_gen=s_gen, v_gen=l_gen)
+
+    note_trig = Trigger(rate=Rate(bpm=60.0))
     show.register_entity(note_trig, 'note_trigger')
 
     organist = ColorOrganist(ctrl_channel=1, note_trig=note_trig, col_gen=color_gen)
@@ -42,23 +49,45 @@ def initialize(midi_port_name, framerate=60.0):
 
     return show
 
-def run_websocket_server(port, cmd_queue):
+def run_websocket_server(port, cmd_queue, resp_queue):
     """Start up a simple websocket server that deserializes messages."""
-    async def handle(websocket, path):
+    # Use a thread pool to concurrently poll the blocking response queue.
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+    async def handle_command(websocket, path):
         async for message in websocket:
             try:
                 payload = json.loads(message)
             except ValueError:
                 print("Could not deserialize message as json:", message)
                 continue
+
             cmd_queue.put(payload)
+
+    async def handle_response(websocket, path):
+        event_loop = asyncio.get_event_loop()
+        while True:
+            message = await event_loop.run_in_executor(executor, resp_queue.get)
+            await websocket.send(json.dumps(message))
+
+    async def handle(websocket, path):
+        tasks = [
+            asyncio.create_task(c)
+            for c in [
+                handle_command(websocket, path),
+                handle_response(websocket, path)]]
+        done, pending = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+
+        for task in pending:
+            task.cancel()
 
     asyncio.set_event_loop(asyncio.new_event_loop())
 
+    event_loop = asyncio.get_event_loop()
+
     start_server = websockets.serve(handle, "localhost", port)
-    asyncio.get_event_loop().run_until_complete(start_server)
-    asyncio.get_event_loop().run_forever()
-    # FIXME no quit mechanism
+    event_loop.run_until_complete(start_server)
+    event_loop.run_forever()
 
 class Controller(cmd.Cmd):
     """cmd module style show controller.
@@ -73,11 +102,24 @@ class Controller(cmd.Cmd):
         show = initialize(port_name)
 
         self.cmd_queue = show.cmd_queue
-        self.resp_queue = show.resp_queue
+
+        # fan the show responses out to the command line and the frontend
+        # use a fake queue that just prints synchronously to report to the command line
+        frontend_queue = Queue()
+        def show_resp(resp):
+            try:
+                resp_type, payload = resp
+            except ValueError:
+                print("Error when unpacking the show response", resp)
+            else:
+                if resp_type in ('message', 'error'):
+                    print(payload)
+
+        show.responders = [frontend_queue.put, show_resp]
 
         # launch the websocket server
         self.socket_thread = Thread(
-            target=lambda: run_websocket_server(4321, show.cmd_queue))
+            target=lambda: run_websocket_server(4321, show.cmd_queue, frontend_queue))
         self.socket_thread.start()
 
         self.show_thread = Thread(target=show.run)
@@ -88,18 +130,9 @@ class Controller(cmd.Cmd):
     def emptyline(self):
         pass
 
-    def handle_command(self, cmd_type, payload=None, timeout=1.0):
+    def handle_command(self, cmd_type, payload=None):
         """Issue a command to the show application and handle the response."""
         self.cmd_queue.put((cmd_type, payload))
-        try:
-            (resp_err, resp) = self.resp_queue.get(timeout=timeout)
-        except Empty:
-            print("The show did not respond to the command '{} {}'".format(cmd_type, payload))
-            return (True, None)
-
-        if resp_err:
-            print("An error occurred in response to the command '{} {}':".format(cmd, payload))
-        print(resp)
 
     def do_quit(self, _):
         """Quit the application."""
@@ -117,4 +150,5 @@ class Controller(cmd.Cmd):
             cmd_type, payload = eval(name_and_command)
         except Exception as err:
             print("error:", err)
+            return
         self.handle_command(cmd_type, payload)

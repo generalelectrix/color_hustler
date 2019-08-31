@@ -18,3 +18,10 @@ class Controllable:
 
         parsed = parser(value)
         setattr(self, name, parsed)
+
+def validate_string_constant(allowed_values, parameter_description):
+    def validate(value):
+        if value not in allowed_values:
+            raise ValueError('Invalid {}: "{}".'.format(parameter_description, value))
+        return value
+    return validate
