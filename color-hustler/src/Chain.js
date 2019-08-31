@@ -16,7 +16,7 @@ const Chain = ({index, dispatch}) => {
             dispatch={dispatch} />
           <ConstantList
             name={"hue_offsets" + index}
-            displayName="hue offsets"
+            displayName="offsets"
             dispatch={dispatch} />
         </div>
         <div className="panel">
