@@ -21,9 +21,9 @@ const Noise = ({name, initialCenter, dispatch}) => {
   }
 
   return (
-    <div class="form-inline">
+    <div class="panel">
       {name}
-      <select value={mode} onChange={updateMode} class="form-control">
+      <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>
       </select>

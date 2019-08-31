@@ -23,27 +23,24 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=fals
   const handleChange = e => onChange(e.target.value)
 
   return (
-    <div class="form-group">
-      <label>
-        {label}
+    <label>
+      {label}
+      <input
+        type="range"
+        orient="vertical"
+        min={min}
+        max={max}
+        step={0.00001}
+        value={value}
+        onChange={handleChange}/>
+      {showValue &&
         <input
-          type="range"
-          class="form-control-range"
+          type="number"
           min={min}
           max={max}
           step={0.00001}
           value={value}
-          onChange={handleChange}/>
-        {showValue &&
-          <input
-            type="number"
-            class="form-control"
-            min={min}
-            max={max}
-            step={0.00001}
-            value={value}
-            onChange={handleChange}/>}
-      </label>
-    </div>
+          onChange={handleChange}/>}
+    </label>
   )
 }

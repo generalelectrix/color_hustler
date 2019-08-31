@@ -2,6 +2,7 @@ import React from 'react';
 import Noise from './Noise'
 import Trigger from './Trigger'
 import ConstantList from './ConstantList'
+import './App.css'
 
 // The websocket we'll use to communicate with the backend.
 const socket = new WebSocket('ws://localhost:4321')

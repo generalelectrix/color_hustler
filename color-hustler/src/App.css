@@ -1,0 +1,8 @@
+.App {
+    display: grid;
+}
+
+.panel {
+    border-style: outset;
+    border-radius: 5px;
+}
