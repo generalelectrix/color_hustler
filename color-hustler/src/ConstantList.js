@@ -29,7 +29,6 @@ const ConstantList = ({name, dispatch}) => {
       <span>{name}</span>
       <input
         type="text"
-        pattern=""
         onChange={e => setValues(e.target.value)}
         onKeyDown={handleKeyDown} />
       <label>
