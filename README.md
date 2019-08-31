@@ -1,3 +1,3 @@
-# color_organist
+# color_hustler
 
-python colorg.py
+!(/readme.png?raw=true)
