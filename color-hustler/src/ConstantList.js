@@ -25,7 +25,7 @@ const ConstantList = ({name, dispatch}) => {
   }
 
   return (
-    <div className="panel">
+    <div className="flexcol">
       <span>{name}</span>
       <input
         type="text"

@@ -21,20 +21,22 @@ const Noise = ({name, initialCenter, dispatch}) => {
   }
 
   return (
-    <div class="panel">
+    <div class="flexcol">
       <span>{name}</span>
       <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>
       </select>
-      <Slider
-        label="center"
-        value={center}
-        onChange={v => updateAndSend("center", v, setCenter)} />
-      <Slider
-        label="width"
-        value={width}
-        onChange={v => updateAndSend("width", v, setWidth)} />
+      <div className="flexrow">
+        <Slider
+          label="center"
+          value={center}
+          onChange={v => updateAndSend("center", v, setCenter)} />
+        <Slider
+          label="width"
+          value={width}
+          onChange={v => updateAndSend("width", v, setWidth)} />
+      </div>
     </div>
   )
 }

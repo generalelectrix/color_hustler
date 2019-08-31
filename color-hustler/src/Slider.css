@@ -8,6 +8,20 @@ input[type=range][orient=vertical]
 }
 
 div.slider {
-    display: inline-block;
+    display: flex;
+    flex-direction: column;
     align-items: center;
+    margin: 5px;
+}
+
+.slider-input {
+    width: 50px;
+    -moz-appearance: textfield;
+    margin: 2px;
+}
+
+.slider-input::-webkit-outer-spin-button,
+.slider-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
 }

@@ -17,13 +17,23 @@ const sendMessage = (name, attr, payload) => {
 function App() {
   return (
     <div className="App">
-      <div className="chain">
-        <Noise name="hue" initialCenter={0.0} dispatch={sendMessage} />
-        <ConstantList name="hue_offsets" dispatch={sendMessage} />
-        <Noise name="saturation" initialCenter={1.0} dispatch={sendMessage} />
-        <Noise name="lightness" initialCenter={0.5} dispatch={sendMessage} />
+      <div className="flexrow">
+        <div className="panel flexrow">
+          <Noise name="hue" initialCenter={0.0} dispatch={sendMessage} />
+          <ConstantList name="hue_offsets" dispatch={sendMessage} />
+        </div>
+        <div className="panel">
+          <Noise name="saturation" initialCenter={1.0} dispatch={sendMessage} />
+        </div>
+        <div className="panel">
+          <Noise name="lightness" initialCenter={0.5} dispatch={sendMessage} />
+        </div>
       </div>
-      <Trigger name="note_trigger" initialBpm={60.0} dispatch={sendMessage} />
+      <div className="flexrow">
+        <div className="panel">
+          <Trigger name="note_trigger" initialBpm={60.0} dispatch={sendMessage} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -2,20 +2,21 @@
 
 }
 
-.chain {
+.flexrow {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
 }
 
+.flexcol {
+    display: flex;
+    align-items: flex-start;
+    flex-direction: column;
+}
+
 .panel {
-    display: inline-block;
     border-style: outset;
     border-radius: 5px;
     padding: 5px;
     margin: 5px;
-}
-
-.panel > span {
-    display: block;
 }

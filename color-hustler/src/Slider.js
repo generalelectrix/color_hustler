@@ -25,7 +25,6 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=fals
 
   return (
     <div class="slider">
-      {label}
       <input
         type="range"
         orient="vertical"
@@ -34,9 +33,11 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=fals
         step={0.00001}
         value={value}
         onChange={handleChange}/>
+      {label}
       {showValue &&
         <input
           type="number"
+          className="slider-input"
           min={min}
           max={max}
           step={0.00001}
