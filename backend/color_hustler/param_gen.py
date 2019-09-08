@@ -136,10 +136,6 @@ class ConstantList(ParameterGenerator):
         self.index = (self.index + 1) % len(self.values)
         return self.values[self.index]
 
-def validate_mode(mode):
-    if mode not in (Noise.UNIFORM, Noise.GAUSSIAN):
-        raise ValueError("Invalid random mode: {}".format(mode))
-    return mode
 
 class Noise(ParameterGenerator):
     UNIFORM = 'uniform'
