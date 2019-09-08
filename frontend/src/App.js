@@ -3,7 +3,7 @@ import Chain from './Chain';
 import './App.css'
 
 // The websocket we'll use to communicate with the backend.
-const socket = new WebSocket('ws://localhost:4321')
+const socket = new WebSocket('ws://' + window.location.hostname + ':4321')
 
 socket.onopen = _ => console.log("Opened websocket.")
 socket.onmessage = event => console.log(JSON.parse(event.data))
