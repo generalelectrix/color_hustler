@@ -2,7 +2,7 @@ import math
 from random import Random
 from . import frame_clock
 from .controllable import Controllable, validate_string_constant
-from .rate import RateProperties
+from .rate import RateProperties, Rate
 
 # --- numeric helper functions ---
 
@@ -289,7 +289,7 @@ class Waveform(ParameterGenerator, RateProperties):
         amplitude=float,
     )
 
-    def __init__(self, rate, waveform):
+    def __init__(self, rate=None, waveform=SINE):
         """Create a function generator with a specified function.
 
         Internally keeps track of phase on the range [0.0, 1.0)
@@ -298,6 +298,10 @@ class Waveform(ParameterGenerator, RateProperties):
         self.smoothing = 0.0
         self.duty_cycle = 1.0
         self.amplitude = 0.0
+
+        if rate is None:
+            rate = Rate(hz=1.0)
+
         self._rate = rate
         self.waveform = waveform
         self._phase = 0.0

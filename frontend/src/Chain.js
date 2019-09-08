@@ -2,6 +2,7 @@ import React from 'react';
 import Noise from './Noise'
 import Trigger from './Trigger'
 import ConstantList from './ConstantList'
+import Waveform from './Waveform'
 
 const Chain = ({index, dispatch}) => {
   return (
@@ -18,6 +19,11 @@ const Chain = ({index, dispatch}) => {
             name={"hue_offsets" + index}
             displayName="offsets"
             dispatch={dispatch} />
+          <Waveform
+            name={"hue_waveform" + index}
+            displayName="waveform"
+            dispatch={dispatch} />
+
         </div>
         <div className="panel">
           <Noise
