@@ -94,7 +94,7 @@ def run_websocket_server(port, cmd_queue, resp_queue):
 
     event_loop = asyncio.get_event_loop()
 
-    start_server = websockets.serve(handle, "localhost", port)
+    start_server = websockets.serve(handle, "0.0.0.0", port)
     event_loop.run_until_complete(start_server)
     event_loop.run_forever()
 
