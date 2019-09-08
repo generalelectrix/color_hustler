@@ -44,25 +44,9 @@ class Rate(object):
     def period(self, period):
         self.hz = 1.0 / float(period)
 
-class Trigger(Controllable):
-    """Polling-based scheduling of an operation."""
-    parameters = dict(period=float, hz=float, bpm=float, reset=bool, active=bool)
-
-    def __init__(self, rate, clock=None):
-        """Create a new Trigger.
-
-        This trigger will initially be in a state where it will fire immediately
-        when first polled.
-
-        Uses the name registration system to get the clock.
-        """
-        self._rate = rate
-        if clock is None:
-            from . import frame_clock as clock
-
-        self.clock = clock
-        self.last_trig = clock.time() - self.period
-        self.active = True
+class RateProperties:
+    """Mixin providing getters and setters for a internal rate parameter."""
+    _rate = None
 
     @property
     def period(self):
@@ -87,6 +71,26 @@ class Trigger(Controllable):
     @bpm.setter
     def bpm(self, bpm):
         self._rate.bpm = bpm
+
+class Trigger(Controllable, RateProperties):
+    """Polling-based scheduling of an operation."""
+    parameters = dict(period=float, hz=float, bpm=float, reset=bool, active=bool)
+
+    def __init__(self, rate, clock=None):
+        """Create a new Trigger.
+
+        This trigger will initially be in a state where it will fire immediately
+        when first polled.
+
+        Uses the name registration system to get the clock.
+        """
+        self._rate = rate
+        if clock is None:
+            from . import frame_clock as clock
+
+        self.clock = clock
+        self.last_trig = clock.time() - self.period
+        self.active = True
 
     @property
     def reset(self):

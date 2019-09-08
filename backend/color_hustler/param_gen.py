@@ -2,6 +2,7 @@ import math
 from random import Random
 from . import frame_clock
 from .controllable import Controllable, validate_string_constant
+from .rate import RateProperties
 
 # --- numeric helper functions ---
 
@@ -138,6 +139,7 @@ class ConstantList(ParameterGenerator):
 
 
 class Noise(ParameterGenerator):
+    """Generate random numbers."""
     UNIFORM = 'uniform'
     GAUSSIAN = 'gaussian'
 
@@ -145,7 +147,6 @@ class Noise(ParameterGenerator):
         mode=validate_string_constant([UNIFORM, GAUSSIAN], "noise mode"),
         center=float,
         width=float)
-    """Generate random numbers."""
     def __init__(self, mode, center, width, seed=None):
         """
         Args:
@@ -169,32 +170,160 @@ class Noise(ParameterGenerator):
                 self.center - self.width, self.center + self.width)
         raise ValueError("Unknown noise mode: {}".format(self.mode))
 
+PI = math.pi
+HALF_PI = math.pi / 2.0
+TWOPI = 2*math.pi
 
-class Function(ParameterGenerator):
+def sine(angle, smoothing, duty_cycle, pulse):
+    angle = angle % 1.0
+
+    if angle > duty_cycle or duty_cycle == 0.0:
+        return 0.0
+
+    angle = angle / duty_cycle
+    if pulse:
+        return (math.sin(TWOPI * angle - HALF_PI) + 1.0) / 2.0
+
+    return math.sin(TWOPI * angle)
+
+def triangle (angle, smoothing, duty_cycle, pulse):
+    """Generate a point on a unit triangle wave from angle."""
+    angle = angle % 1.0
+
+    if angle > duty_cycle or duty_cycle == 0.0:
+        return 0.0
+
+    angle = angle / duty_cycle
+    if pulse:
+        if angle < 0.5:
+            return 2.0 * angle
+        return 2.0 * (1.0 - angle)
+
+    if angle < 0.25:
+        return 4.0 * angle
+    elif angle > 0.75:
+        return 4.0 * (angle - 1.0)
+    else:
+        return 2.0 - 4.0 * angle
+
+def square(angle, smoothing, duty_cycle, pulse):
+    """Generate a point on a square wave from angle and smoothing."""
+
+    angle = angle % 1.0
+
+    if angle > duty_cycle or duty_cycle == 0.0:
+        return 0.0
+
+    angle = angle / duty_cycle
+    if pulse:
+        return square(angle/2.0, smoothing, 1.0, False)
+
+
+    if smoothing == 0.0:
+        if angle < 0.5:
+            return 1.0
+        return -1.0
+
+    if angle < smoothing:
+        return angle / smoothing
+    elif angle > (0.5 - smoothing) and angle < (0.5 + smoothing):
+        return -(angle - 0.5)/smoothing
+    elif angle > (1.0 - smoothing):
+        return (angle - 1.0)/smoothing
+    elif angle >= smoothing and angle <= 0.5 - smoothing:
+        return 1.0
+    else:
+        return -1.0
+
+def sawtooth(angle, smoothing, duty_cycle, pulse):
+    """Generate a point on a sawtooth wave from angle and smoothing."""
+
+    angle = angle % 1.0
+
+    if angle > duty_cycle or duty_cycle == 0.0:
+        return 0.0
+
+    angle = angle / duty_cycle
+    if pulse:
+        return sawtooth(angle/2.0, smoothing, 1.0, False)
+
+    if smoothing == 0.0:
+        if angle < 0.5:
+            return 2.0 * angle
+        return 2.0 * (angle - 1.0)
+
+    if angle < 0.5 - smoothing:
+        return angle / (0.5 - smoothing)
+    elif angle > 0.5 + smoothing:
+        return (angle - 1.0) / (0.5 - smoothing)
+    else:
+        return -(angle - 0.5)/smoothing
+
+def float_unit(value):
+    return clamp(float(value), 0.0, 1.0)
+
+# TODO: extract the function generator from pytunnel
+class Waveform(ParameterGenerator, RateProperties):
     """Provide the value of a temporal, periodic function."""
-    def __init__(self, rate, func):
-        """Create a function generator with a specified function.
+    SINE = "sine"
+    SQUARE = "square"
+    SAWTOOTH = "sawtooth"
+    TRIANGLE = "triangle"
 
-        func should take two positional arguments: (phase, rate)
+    _funcs = {
+        SINE: sine,
+        SQUARE: square,
+        SAWTOOTH: sawtooth,
+        TRIANGLE: triangle,
+    }
+
+    parameters = dict(
+        waveform=validate_string_constant([SINE, SAWTOOTH, TRIANGLE], "waveform"),
+        period=float,
+        hz=float,
+        bpm=float,
+        reset=bool,
+        smoothing=float_unit,
+        duty_cycle=float_unit,
+        pulse=bool,
+        amplitude=float,
+    )
+
+    def __init__(self, rate, waveform):
+        """Create a function generator with a specified function.
 
         Internally keeps track of phase on the range [0.0, 1.0)
         """
-        self.rate = rate
-        self.func = func
-        self._phase = 0
-        self.last_called = frame_clock.time()
+        self.pulse = False
+        self.smoothing = 0.0
+        self.duty_cycle = 1.0
+        self.amplitude = 0.0
+        self._rate = rate
+        self.waveform = waveform
+        self._phase = 0.0
+        self._last_update = frame_clock.time()
 
     @property
-    def phase(self):
-        return self._phase
+    def reset(self):
+        return None
 
-    @phase.setter
-    def phase(self, phase):
-        self._phase = phase % 1.0
+    @reset.setter
+    def reset(self, _):
+        self._phase = 0.0
+
+    def _update_phase(self, now):
+        delta_t = now - self._last_update
+        self._phase = (delta_t * self.hz) % 1.0
+        self._last_update = now
 
     def get(self):
-        self.phase += (frame_clock.time() - self.last_called)/self.rate.period
-        return self.func(self.phase, self.rate)
+        now = frame_clock.time()
+        if now != self._last_update:
+            self._update_phase(now)
+
+        func = self._funcs[self.waveform]
+        val = func(self._phase, self.smoothing, self.duty_cycle, self.pulse)
+        return self.amplitude * val
 
 # --- modulators ---
 
