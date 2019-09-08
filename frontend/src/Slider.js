@@ -24,10 +24,11 @@ export const Slider = ({label, onChange, value, min=0.0, max=1.0, showValue=true
   const handleChange = e => onChange(e.target.value)
 
   return (
-    <div className="slider">
+    <div className="slider stretch">
       <input
         type="range"
         orient="vertical"
+        className="stretch"
         min={min}
         max={max}
         step={0.001}

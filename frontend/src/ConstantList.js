@@ -25,7 +25,7 @@ const ConstantList = ({name, dispatch, displayName}) => {
   }
 
   return (
-    <div className="flexcol">
+    <div className="flexcol stretch">
       <span>{displayName || name}</span>
       <input
         type="text"

@@ -21,7 +21,7 @@ const Noise = ({name, displayName, initialCenter, dispatch}) => {
   }
 
   return (
-    <div className="flexcol">
+    <div className="flexcol stretch">
       <span>{displayName || name}</span>
       <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>

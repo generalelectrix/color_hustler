@@ -22,7 +22,7 @@ def in_range(value, min_val=None, max_val=None):
 def clamp(value, min_val=None, max_val=None):
     val_in_range = in_range(value, min_val, max_val)
     if val_in_range == 0:
-        return
+        return value
     elif val_in_range == 1:
         return max_val
     elif val_in_range == -1:
@@ -278,7 +278,7 @@ class Waveform(ParameterGenerator, RateProperties):
     }
 
     parameters = dict(
-        waveform=validate_string_constant([SINE, SAWTOOTH, TRIANGLE], "waveform"),
+        waveform=validate_string_constant([SINE, SAWTOOTH, TRIANGLE, SQUARE], "waveform"),
         period=float,
         hz=float,
         bpm=float,
@@ -317,7 +317,7 @@ class Waveform(ParameterGenerator, RateProperties):
 
     def _update_phase(self, now):
         delta_t = now - self._last_update
-        self._phase = (delta_t * self.hz) % 1.0
+        self._phase = (self._phase + (delta_t * self.hz)) % 1.0
         self._last_update = now
 
     def get(self):

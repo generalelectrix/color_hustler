@@ -14,7 +14,7 @@ import websockets
 
 from .color import ColorGenerator
 from .organ import ColorOrganist
-from .param_gen import Noise, ConstantList, Modulator
+from .param_gen import Noise, ConstantList, Modulator, Waveform
 from .rate import Trigger, Rate
 from .show import Show
 
@@ -43,9 +43,16 @@ def create_show(midi_port_name, framerate=60.0):
         show.register_entity(hue_offset_list, label('hue_offsets'))
 
         offset_hue = Modulator(source=h_gen, modulation_gen=hue_offset_list)
-        show.register_entity(offset_hue, label('hue_modulator'))
+        show.register_entity(offset_hue, label('hue_offsets_mod'))
 
-        color_gen = ColorGenerator(h_gen=offset_hue, s_gen=s_gen, v_gen=l_gen)
+        # add additive waveform modulation for hue
+        hue_waveform = Waveform()
+        show.register_entity(hue_waveform, label('hue_waveform'))
+
+        hue_waveform_mod = Modulator(source=offset_hue, modulation_gen=hue_waveform)
+        show.register_entity(hue_waveform_mod, label('hue_waveform_mod'))
+
+        color_gen = ColorGenerator(h_gen=hue_waveform_mod, s_gen=s_gen, v_gen=l_gen)
 
         note_trig = Trigger(rate=Rate(bpm=60.0))
         show.register_entity(note_trig, label('trigger'))

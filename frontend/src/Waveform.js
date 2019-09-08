@@ -31,15 +31,28 @@ const Waveform = ({name, displayName, dispatch}) => {
   }
 
   return (
-    <div className="flexcol">
-      <span>{displayName || name}</span>
-      <select value={waveform} onChange={updateWaveform}>
-        <option value={SINE}>sine</option>
-        <option value={SQUARE}>square</option>
-        <option value={SAWTOOTH}>sawtooth</option>
-        <option value={TRIANGLE}>triangle</option>
-      </select>
+    <div className="flexcol stretch">
       <div className="flexrow">
+
+          <span>{displayName || name}</span>
+          <select value={waveform} onChange={updateWaveform}>
+            <option value={SINE}>sine</option>
+            <option value={SQUARE}>square</option>
+            <option value={SAWTOOTH}>sawtooth</option>
+            <option value={TRIANGLE}>triangle</option>
+          </select>
+
+        <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
+        <label>
+          pulse
+          <input
+            type="checkbox"
+            style={{margin: '2px', width: '20px', height: '20px'}}
+            onChange={handlePulse}
+            checked={pulse} />
+        </label>
+      </div>
+      <div className="flexrow stretch">
         <Slider
           label="bpm"
           value={bpm}
@@ -59,17 +72,6 @@ const Waveform = ({name, displayName, dispatch}) => {
           label="duty cycle"
           value={dutyCycle}
           onChange={v => updateAndSend("duty_cycle", v, setDutyCycle)} />
-        <div class="flexcol">
-          <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
-          <label>
-            pulse
-            <input
-              type="checkbox"
-              style={{margin: '2px', width: '20px', height: '20px'}}
-              onChange={handlePulse}
-              checked={pulse} />
-          </label>
-        </div>
       </div>
     </div>
   )

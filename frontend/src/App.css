@@ -2,11 +2,12 @@
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    align-items: stretch;
 }
 
 .flexcol {
     display: flex;
-    align-items: flex-start;
+    align-items: stretch;
     flex-direction: column;
 }
 
@@ -15,4 +16,8 @@
     border-radius: 5px;
     padding: 5px;
     margin: 5px;
+}
+
+.stretch {
+    flex-grow: 1;
 }
