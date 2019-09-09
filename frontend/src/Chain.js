@@ -28,7 +28,7 @@ const Chain = ({index, dispatch}) => {
               dispatch={dispatch} />
           </Foldable>
         </div>
-        <div className="panel">
+        <div className="panel flexrow">
           <Foldable label="saturation">
             <Noise
               name={"saturation" + index}
@@ -36,7 +36,7 @@ const Chain = ({index, dispatch}) => {
               dispatch={dispatch} />
           </Foldable>
         </div>
-        <div className="panel">
+        <div className="panel flexrow">
           <Foldable label="lightness">
             <Noise
               name={"lightness" + index}
