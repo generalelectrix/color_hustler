@@ -28,40 +28,53 @@ def create_show(midi_port_name, framerate=60.0):
         show.register_entity(generator, name)
         return generator
 
-    def create_chain(index):
+    def create_mod_chain(source, labeler):
+        """Create a standard modulation chain on source."""
+        # constant list modulation
+        offset_list = ConstantList([0.0])
+        show.register_entity(offset_list, labeler('offsets'))
+
+        offset_mod = Modulator(source=source, modulation_gen=offset_list)
+        show.register_entity(offset_mod, labeler('offsets_mod'))
+
+        # additive waveform modulation
+        waveform = Waveform()
+        show.register_entity(waveform, labeler('waveform'))
+
+        waveform_mod = Modulator(source=offset_mod, modulation_gen=waveform)
+        show.register_entity(waveform_mod, labeler('waveform_mod'))
+
+        return waveform_mod
+
+    def create_color_chain(index):
         def label(name):
             return name + str(index)
 
+        def sublabel(name):
+            def labeler(subname):
+                return label("{}_{}".format(name, subname))
+            return labeler
 
         # build modulation chains for each color coordinate
         h_gen = add_random_source(label('hue'), center=0.0)
+        h_mod = create_mod_chain(h_gen, sublabel('hue'))
+
         s_gen = add_random_source(label('saturation'), center=1.0)
+        s_mod = create_mod_chain(s_gen, sublabel('saturation'))
+
         l_gen = add_random_source(label('lightness'), center=0.5)
+        l_mod = create_mod_chain(l_gen, sublabel('lightness'))
 
-        # allow constant list modulation of hue
-        hue_offset_list = ConstantList([0.0])
-        show.register_entity(hue_offset_list, label('hue_offsets'))
-
-        offset_hue = Modulator(source=h_gen, modulation_gen=hue_offset_list)
-        show.register_entity(offset_hue, label('hue_offsets_mod'))
-
-        # add additive waveform modulation for hue
-        hue_waveform = Waveform()
-        show.register_entity(hue_waveform, label('hue_waveform'))
-
-        hue_waveform_mod = Modulator(source=offset_hue, modulation_gen=hue_waveform)
-        show.register_entity(hue_waveform_mod, label('hue_waveform_mod'))
-
-        color_gen = ColorGenerator(h_gen=hue_waveform_mod, s_gen=s_gen, v_gen=l_gen)
+        color_gen = ColorGenerator(h_gen=h_mod, s_gen=s_mod, v_gen=l_mod)
 
         note_trig = Trigger(rate=Rate(bpm=60.0))
         show.register_entity(note_trig, label('trigger'))
         organist = ColorOrganist(ctrl_channel=index, note_trig=note_trig, col_gen=color_gen)
         show.organists.add(organist)
 
-    create_chain(0)
-    create_chain(1)
-    create_chain(2)
+    create_color_chain(0)
+    create_color_chain(1)
+    create_color_chain(2)
 
     return show
 
