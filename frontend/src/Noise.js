@@ -1,10 +1,11 @@
 import React from 'react'
 import { Slider } from './Slider'
 
+
 const GAUSSIAN = 'gaussian'
 const UNIFORM = 'uniform'
 
-const Noise = ({name, displayName, initialCenter, dispatch}) => {
+const Noise = ({name, initialCenter, dispatch}) => {
 
   const [mode, setMode] = React.useState(GAUSSIAN)
   const [center, setCenter] = React.useState(initialCenter)
@@ -22,12 +23,11 @@ const Noise = ({name, displayName, initialCenter, dispatch}) => {
 
   return (
     <div className="flexcol stretch">
-      <span>{displayName || name}</span>
       <select value={mode} onChange={updateMode}>
         <option value={GAUSSIAN}>gaussian</option>
         <option value={UNIFORM}>uniform</option>
       </select>
-      <div className="flexrow">
+      <div className="flexrow stretch">
         <Slider
           label="center"
           value={center}

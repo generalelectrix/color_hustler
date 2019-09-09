@@ -1,0 +1,14 @@
+.folded {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    margin-top: 5px;
+}
+
+.fold-container {
+    display: contents;
+    border-style: solid;
+    border-radius: 5px;
+    border-width: 1px;
+    padding: 5px;
+    /*margin: 5px;*/
+}

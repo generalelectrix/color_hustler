@@ -26,7 +26,6 @@ const ConstantList = ({name, dispatch, displayName}) => {
 
   return (
     <div className="flexcol stretch">
-      <span>{displayName || name}</span>
       <input
         type="text"
         onChange={e => setValues(e.target.value)}

@@ -33,16 +33,14 @@ const Waveform = ({name, displayName, dispatch}) => {
   return (
     <div className="flexcol stretch">
       <div className="flexrow">
-
-          <span>{displayName || name}</span>
-          <select value={waveform} onChange={updateWaveform}>
+          <select value={waveform} onChange={updateWaveform} className="stretch">
             <option value={SINE}>sine</option>
             <option value={SQUARE}>square</option>
             <option value={SAWTOOTH}>sawtooth</option>
             <option value={TRIANGLE}>triangle</option>
           </select>
 
-        <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
+        <button className="stretch" type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
         <label>
           pulse
           <input

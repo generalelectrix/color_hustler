@@ -1,24 +1,23 @@
 import React from 'react'
 import { StatefulSlider } from './Slider'
+import { FaPlayCircle, FaPauseCircle } from "react-icons/fa";
 
 const Trigger = ({name, initialBpm, dispatch}) => {
   const [active, setActive] = React.useState(true)
 
-  const handleActive = e => {
-    setActive(e.target.checked)
-    dispatch(name, "active", e.target.checked)
+  const handleActive = v => {
+    setActive(v)
+    dispatch(name, "active", v)
   }
 
   return (
-    <div className="flexcol">
-      <span>
-        trigger
-        <input
-          type="checkbox"
-          style={{margin: '2px', width: '20px', height: '20px'}}
-          onChange={handleActive}
-          checked={active} />
-      </span>
+    <div className="flexcol stretch">
+      <button
+        type="button"
+        className={active ? "active" : ""}
+        onClick={() => handleActive(!active)}>
+        active
+      </button>
       <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
       <StatefulSlider
         label="bpm"

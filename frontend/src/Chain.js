@@ -3,6 +3,7 @@ import Noise from './Noise'
 import Trigger from './Trigger'
 import ConstantList from './ConstantList'
 import Waveform from './Waveform'
+import Foldable from './Foldable'
 
 const Chain = ({index, dispatch}) => {
   return (
@@ -10,36 +11,41 @@ const Chain = ({index, dispatch}) => {
       channel {index + 1}
       <div className="flexrow">
         <div className="panel flexrow">
-          <Noise
-            name={"hue" + index}
-            displayName="hue"
-            initialCenter={0.0}
-            dispatch={dispatch} />
-          <ConstantList
-            name={"hue_offsets" + index}
-            displayName="offsets"
-            dispatch={dispatch} />
-          <Waveform
-            name={"hue_waveform" + index}
-            displayName="waveform"
-            dispatch={dispatch} />
-
+          <Foldable label="hue">
+            <Noise
+              name={"hue" + index}
+              initialCenter={0.0}
+              dispatch={dispatch} />
+          </Foldable>
+          <Foldable label="offsets" startVisible={false}>
+            <ConstantList
+              name={"hue_offsets" + index}
+              dispatch={dispatch} />
+          </Foldable>
+          <Foldable label="waveform" startVisible={false}>
+            <Waveform
+              name={"hue_waveform" + index}
+              dispatch={dispatch} />
+          </Foldable>
         </div>
         <div className="panel">
-          <Noise
-            name={"saturation" + index}
-            displayName="saturation"
-            initialCenter={1.0}
-            dispatch={dispatch} />
+          <Foldable label="saturation">
+            <Noise
+              name={"saturation" + index}
+              initialCenter={1.0}
+              dispatch={dispatch} />
+          </Foldable>
         </div>
         <div className="panel">
-          <Noise
-            name={"lightness" + index}
-            displayName="lightness"
-            initialCenter={0.5}
-            dispatch={dispatch} />
+          <Foldable label="lightness">
+            <Noise
+              name={"lightness" + index}
+              initialCenter={0.5}
+              dispatch={dispatch} />
+          </Foldable>
         </div>
         <div className="panel">
+          <span>trigger</span>
           <Trigger
             name={"trigger" + index}
             initialBpm={60.0}
