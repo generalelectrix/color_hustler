@@ -1,23 +1,15 @@
 import React from 'react'
 import { StatefulSlider } from './Slider'
-import { FaPlayCircle, FaPauseCircle } from "react-icons/fa";
+import Toggle from './Toggle'
 
 const Trigger = ({name, initialBpm, dispatch}) => {
-  const [active, setActive] = React.useState(true)
-
-  const handleActive = v => {
-    setActive(v)
-    dispatch(name, "active", v)
-  }
 
   return (
     <div className="flexcol stretch">
-      <button
-        type="button"
-        className={active ? "active" : ""}
-        onClick={() => handleActive(!active)}>
-        active
-      </button>
+      <Toggle
+        label="active"
+        initialState={true}
+        onToggle={v => dispatch(name, "active", v)} />
       <button type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
       <StatefulSlider
         label="bpm"

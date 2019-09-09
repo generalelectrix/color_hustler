@@ -1,10 +1,10 @@
 import React from 'react'
+import Toggle from './Toggle'
 // Quick and dirty control over constant list driven modulators.
 
 const ConstantList = ({name, dispatch, displayName}) => {
 
-  const [values, setValues] = React.useState("")
-  const [random, setRandom] = React.useState(false)
+  const [values, setValues] = React.useState("[0.0]")
 
   const handleKeyDown = e => {
     if (e.keyCode === 13) {
@@ -19,24 +19,16 @@ const ConstantList = ({name, dispatch, displayName}) => {
     }
   }
 
-  const handleRandom = e => {
-    setRandom(e.target.checked)
-    dispatch(name, "random", e.target.checked)
-  }
-
   return (
     <div className="flexcol stretch">
       <input
         type="text"
+        value={values}
         onChange={e => setValues(e.target.value)}
         onKeyDown={handleKeyDown} />
-      <label>
-        randomize
-        <input
-          type="checkbox"
-          onChange={handleRandom}
-          checked={random}/>
-      </label>
+      <Toggle
+        label="randomize"
+        onToggle={v => dispatch(name, "random", v)} />
     </div>
 
   )

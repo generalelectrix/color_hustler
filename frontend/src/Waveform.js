@@ -1,5 +1,6 @@
 import React from 'react'
 import { Slider } from './Slider'
+import Toggle from './Toggle'
 
 const SINE = "sine"
 const SQUARE = "square"
@@ -12,7 +13,6 @@ const Waveform = ({name, displayName, dispatch}) => {
   const [amplitude, setAmplitude] = React.useState(0.0)
   const [smoothing, setSmoothing] = React.useState(0.0)
   const [dutyCycle, setDutyCycle] = React.useState(1.0)
-  const [pulse, setPulse] = React.useState(false)
   const [bpm, setBpm] = React.useState(60.0)
 
   const updateAndSend = (parameter, value, stateUpdater) => {
@@ -25,30 +25,21 @@ const Waveform = ({name, displayName, dispatch}) => {
     updateAndSend("waveform", v, setWaveform)
   }
 
-  const handlePulse = e => {
-    setPulse(e.target.checked)
-    dispatch(name, "pulse", e.target.checked)
-  }
-
   return (
     <div className="flexcol stretch">
       <div className="flexrow">
-          <select value={waveform} onChange={updateWaveform} className="stretch">
-            <option value={SINE}>sine</option>
-            <option value={SQUARE}>square</option>
-            <option value={SAWTOOTH}>sawtooth</option>
-            <option value={TRIANGLE}>triangle</option>
-          </select>
+        <select value={waveform} onChange={updateWaveform} className="stretch">
+          <option value={SINE}>sine</option>
+          <option value={SQUARE}>square</option>
+          <option value={SAWTOOTH}>sawtooth</option>
+          <option value={TRIANGLE}>triangle</option>
+        </select>
 
         <button className="stretch" type="button" onClick={() => dispatch(name, "reset", true)}>reset</button>
-        <label>
-          pulse
-          <input
-            type="checkbox"
-            style={{margin: '2px', width: '20px', height: '20px'}}
-            onChange={handlePulse}
-            checked={pulse} />
-        </label>
+        <Toggle
+          label="pulse"
+          className="stretch"
+          onToggle={v => dispatch(name, "pulse", v)} />
       </div>
       <div className="flexrow stretch">
         <Slider
