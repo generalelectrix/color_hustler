@@ -1,101 +1,6 @@
-"""Fixture driver for various gobo rotators.
+"""Fixture driver for various gobo rotators."""
 
---- Roto-Q DMX ---
-0: stopped
-
-Max speed: DMX value 1, about 0.43 rot/sec
-It looks like several values are bucketed to the same speed.  Buckets:
-1
-2
-3 4 5
-6 7
-8 9 10
-11 12
-13
-14 15
-16 17
-18
-19 20
-the remainder seem to be singlets
-
-On the upper end:
-255 254
-253
-252 251 250
-249 248
-247 246 245
-244 243
-242
-241 240
-239 238
-237
-236 235
-singlets below
-
-There's no actual DMX value in the center for no rotation. 127 and 128 are each
-the slowest value for each rotation direction.  This explains some things...
-
-Measurements:
-[
-    (128, 0.00479),
-    (137, 0.01),
-    (147, 0.0169),
-    (157, 0.03),
-    (167, 0.0454),
-    (177, 0.063),
-    (187, 0.0792),
-    (197, 0.106),
-    (207, 0.1425),
-    (217, 0.177),
-    (227, 0.242),
-    (237, 0.308),
-    (242, 0.345),
-    (249, 0.3875),
-    (255, 0.43),
-]
-
---- Smart Move DMX ---
-
-Some odd bucketing:
-5 6 7 8 are the same speed
-18 19 same speed
-
-124 is slowest
-133 is slowest in other direction
-125-132 is stopped
-
-251 250 249 248 same speed
-238 237 same speed
-
-Measurements:
-[
-    (135, 0.00193),
-    (145, 0.0027),
-    (155, 0.00583),
-    (165, 0.0102),
-    (175, 0.0175),
-    (176, 0.0194),
-    (179, 0.0244),
-    (181, 0.0306),
-    (183, 0.0406),
-    (184, 0.0481),
-    (185, 0.0604),
-    (187, 0.0794),
-    (189, 0.0909),
-    (191, 0.0972),
-    (193, 0.107),
-    (195, 0.116),
-    (205, 0.141),
-    (215, 0.166),
-    (225, 0.191),
-    (235, 0.223),
-    (245, 0.27),
-    (249, 0.293),
-    (255, 0.344),
-]
-
-This shit is bananas.
-
+"""
 --- GOBO SPINNAZ ---
 
 (DHA Varispeed driven by GOBO SPINNAZ driver)
@@ -128,6 +33,8 @@ control signals outside of 1.0 if we want to reach up to higher values.
 """
 from bisect import bisect_left
 
+UNIT_SPEED = 0.185 # Hz
+
 class GoboSpinna:
     """Control profile for custom DHA Varispeed driven by GOBO SPINNAZ.
 
@@ -155,6 +62,65 @@ class GoboSpinna:
         speed_int = int(abs(value) * 256.0)
         return direction, min(max(speed_int, 0), 255)
 
+"""
+--- Roto-Q DMX ---
+0: stopped
+
+Max speed: DMX value 1, about 0.43 rot/sec
+It looks like several values are bucketed to the same speed:
+3 4 5
+6 7
+8 9 10
+11 12
+14 15
+16 17
+19 20
+
+255 254
+252 251 250
+249 248
+247 246 245
+244 243
+241 240
+239 238
+236 235
+
+These are all above unit speed, so fine to ignore them.
+
+There's no actual DMX value in the center for no rotation. 127 and 128 are each
+the slowest value for each rotation direction.  This explains some things.
+"""
+
+ROTO_Q_MEAS = [
+    (128, 0.00479),
+    (137, 0.01),
+    (147, 0.0169),
+    (157, 0.03),
+    (167, 0.0454),
+    (177, 0.063),
+    (187, 0.0792),
+    (197, 0.106),
+    (207, 0.1425),
+    (217, 0.177),
+    (227, 0.242),
+    (237, 0.308),
+    (242, 0.345),
+    (249, 0.3875),
+    (255, 0.43),
+]
+
+def roto_q_lut():
+    # upper range
+    lut = build_lut(ROTO_Q_MEAS)
+
+    # invert to create LUT for lower range
+    # the lower range has one fewer DMX value than the upper range
+    # the min and max speeds are the same, though, so we'll need to arbitrarily
+    # pick a value from the upper range to remove.  One of the duplicated values
+    # makes the most sense, as the interpolated values are just plain wrong for
+    # those anyway.
+
+
 class RotoQDmx:
     """Control profile for Apollo Roto-Q DMX.
 
@@ -172,6 +138,44 @@ class RotoQDmx:
         # only about 90 real speed values otherwise in this range
 
 
+"""
+--- Smart Move DMX ---
+
+Bucketed speeds:
+5 6 7 8
+18 19
+251 250 249 248
+238 237
+
+Slowest: 124, 133
+Stopped: 125-132
+"""
+# This shit is bananas, super-weird speed profile.
+SMART_MOVE_MEAS = [
+    (135, 0.00193),
+    (145, 0.0027),
+    (155, 0.00583),
+    (165, 0.0102),
+    (175, 0.0175),
+    (176, 0.0194),
+    (179, 0.0244),
+    (181, 0.0306),
+    (183, 0.0406),
+    (184, 0.0481),
+    (185, 0.0604),
+    (187, 0.0794),
+    (189, 0.0909),
+    (191, 0.0972),
+    (193, 0.107),
+    (195, 0.116),
+    (205, 0.141),
+    (215, 0.166),
+    (225, 0.191),
+    (235, 0.223),
+    (245, 0.27),
+    (249, 0.293),
+    (255, 0.344),
+]
 
 def take_closest(myList, myNumber):
     """
@@ -194,9 +198,11 @@ def take_closest(myList, myNumber):
 
 def build_lut(meas):
     x = [m[0] for m in meas]
-    s = [m[1] for m in meas]
+    s = [m[1]/UNIT_SPEED for m in meas]
 
     ds_dx = [ds/dx for ds, dx in zip(delta(s), delta(x))]
+
+    min_value = x[0]
 
     values = []
     for value in range(x[0], x[-1]+1):
@@ -209,11 +215,14 @@ def build_lut(meas):
 
         speed = base_s + (value - base_x)*base_ds_dx
 
-        values.append((speed, value))
+        values.append((speed, value - min_value))
     return values
 
 def delta(vals):
     return [h - l for l, h in zip(vals, vals[1:])]
+
+
+
 
 
 
