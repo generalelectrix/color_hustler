@@ -35,7 +35,7 @@ singlets below
 There's no actual DMX value in the center for no rotation. 127 and 128 are each
 the slowest value for each rotation direction.  This explains some things...
 
-Some measurements:
+Measurements:
 [
     (255, 0.43),
     (249, 0.3875),
@@ -93,6 +93,35 @@ Measurements:
     (145, 0.00270),
     (135, 0.00193),
 ]
+
+This shit is bananas.
+
+--- GOBO SPINNAZ ---
+Unsurprisingly, straight as an arrow, given linear voltage drive of a DC motor.
+Max speed is MUCH slower than the other two rotator styles.
+
+[
+    (255, 0.185),
+    (235, 0.170),
+    (215, 0.156),
+    (195, 0.141),
+    (175, 0.127),
+    (155, 0.111),
+    (135, 0.0963),
+    (115, 0.0825),
+    (95, 0.0669),
+    (75, 0.0523),
+    (55, 0.0377),
+    (35, 0.0225),
+    (15, 0.0075),
+]
+
+If we normalize speed so the fastest rotator at max is 1, we lose a lot of the
+upper range and resolution of the faster rotators.  I think I'll scale them so
+that the slowest rotator's max speed is 1.0, but make the profiles understand
+control signals outside of 1.0.
+
+1.0 thus means 0.185 Hz or 11.1 rpm.
 """
 
 class RotoQDmx:
