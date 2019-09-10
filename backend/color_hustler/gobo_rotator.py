@@ -127,7 +127,6 @@ control signals outside of 1.0 if we want to reach up to higher values.
 1.0 thus means 0.185 Hz or 11.1 rpm.
 """
 from bisect import bisect_left
-from .param_gen import clamp
 
 class GoboSpinna:
     """Control profile for custom DHA Varispeed driven by GOBO SPINNAZ.
@@ -153,8 +152,8 @@ class GoboSpinna:
 
     def _render_single(self, value):
         direction = 0 if value <= 0.0 else 255
-        speed = int(clamp(abs(value) * 255, 0, 255))
-        return direction, speed
+        speed_int = int(abs(value) * 256.0)
+        return direction, min(max(speed_int, 0), 255)
 
 class RotoQDmx:
     """Control profile for Apollo Roto-Q DMX.
