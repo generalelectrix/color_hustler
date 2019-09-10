@@ -97,6 +97,9 @@ Measurements:
 This shit is bananas.
 
 --- GOBO SPINNAZ ---
+
+(DHA Varispeed driven by GOBO SPINNAZ driver)
+
 Unsurprisingly, straight as an arrow, given linear voltage drive of a DC motor.
 Max speed is MUCH slower than the other two rotator styles.
 
