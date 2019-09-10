@@ -126,6 +126,73 @@ control signals outside of 1.0.
 
 1.0 thus means 0.185 Hz or 11.1 rpm.
 """
+from .param_gen import clamp
 
-class RotoQDmx:
-    pass
+class GoboSpinna:
+    """Control profile for custom DHA Varispeed driven by GOBO SPINNAZ.
+
+    Channel layout:
+    0: gobo 1 direction
+    1: gobo 1 speed
+    2: gobo 2 direction
+    3 gobo 2 speed
+    """
+    def __init__(self, address):
+        self.address = address
+        self.g0 = 0.0
+        self.g1 = 0.0
+
+    def render(self, buf):
+        d0, s0 = self._render_single(self.g0)
+        d1, s1 = self._render_single(self.g1)
+        buf[self.address] = d0
+        buf[self.address + 1] = s0
+        buf[self.address + 2] = d1
+        buf[self.address + 3] = s1
+
+    def _render_single(self, value):
+        direction = 0 if value <= 0.0 else 255
+        speed = int(clamp(abs(value) * 255, 0, 255))
+        return direction, speed
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
