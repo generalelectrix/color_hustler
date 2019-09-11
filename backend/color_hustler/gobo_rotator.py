@@ -1,4 +1,40 @@
 """Fixture driver for various gobo rotators."""
+from bisect import bisect_left
+
+__all__ = (
+    'GoboSpinna',
+    'RotoQDmx',
+    'SmartMoveDmx',
+)
+
+def build_lut(meas):
+    """Build a reverse speed lookup table from measurements.
+
+    Linear interpolation between measured points.
+    """
+    v = [m[0] for m in meas]
+    s = [m[1]/UNIT_SPEED for m in meas]
+
+    ds_dv = [ds/dv for ds, dv in zip(delta(s), delta(v))]
+
+    min_value = v[0]
+
+    values = []
+    for value in range(v[0], v[-1]+1):
+        base_s, base_v, base_ds_dv = s[0], v[0], ds_dv[0]
+        for v0, s0, ds0 in zip(v, s, ds_dv):
+            if value - v0 < 0:
+                break
+            base_s, base_v, base_ds_dv = s0, v0, ds0
+
+
+        speed = base_s + (value - base_v)*base_ds_dv
+
+        values.append((speed, value - min_value))
+    return values
+
+def delta(vals):
+    return [h - l for l, h in zip(vals, vals[1:])]
 
 """
 --- GOBO SPINNAZ ---
@@ -31,7 +67,6 @@ control signals outside of 1.0 if we want to reach up to higher values.
 
 1.0 thus means 0.185 Hz or 11.1 rpm.
 """
-from bisect import bisect_left
 
 UNIT_SPEED = 0.185 # Hz
 
@@ -63,17 +98,6 @@ class GoboSpinna:
         return direction, min(max(speed_int, 0), 255)
 
 
-class LookupTable:
-    """Use a lookup table to set DMX values based on selected unit speed."""
-    speeds, dmx_vals = [], []
-
-    def __init__(self, address):
-        self.address = address
-        self.value = 0.0
-
-    def render(self, buf):
-        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
-        buf[self.address+1] = 0
 """
 --- Roto-Q DMX ---
 0: stopped
@@ -163,7 +187,8 @@ class RotoQDmx:
         self.value = 0.0
 
     def render(self, buf):
-        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
+        # The negation on the value is to make direction consistent with the other two rotators.
+        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, -1.0 * self.value)
         buf[self.address+1] = 0
 
 
@@ -181,6 +206,7 @@ Stopped: 125-132
 """
 # This shit is bananas, super-weird speed profile.
 SMART_MOVE_MEAS = [
+    (133, 0.001776), # this point wasn't actually measured, just extrapolated down
     (135, 0.00193),
     (145, 0.0027),
     (155, 0.00583),
@@ -206,6 +232,46 @@ SMART_MOVE_MEAS = [
     (255, 0.344),
 ]
 
+def smart_move_lut():
+    # upper range
+    lut = build_lut(SMART_MOVE_MEAS)
+
+    # invert to create LUT for lower range
+    # lower range has one extra DMX value, just ignore it
+    reverse_lut = list(reversed(list((-1*s, -1*v) for s, v in lut)))
+
+    # offset the coordinates, add the center detent, and done
+    speeds, dmx_vals = [], []
+    for s, v in reverse_lut:
+        speeds.append(s)
+        dmx_vals.append(124 + v)
+    speeds.append(0.0)
+    dmx_vals.append(130)
+    for s, v in lut:
+        speeds.append(s)
+        dmx_vals.append(133 + v)
+    return speeds, dmx_vals
+
+class SmartMoveDmx:
+    """Control profile for Apollo Smart Move DMX.
+
+    Channel layout:
+    0: direction/speed
+    1: set to 0 for rotation mode
+    2: set to 0 for rotation mode
+    """
+    speeds, dmx_vals = smart_move_lut()
+
+    def __init__(self, address):
+        self.address = address
+        self.value = 0.0
+
+    def render(self, buf):
+        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
+        buf[self.address+1] = 0
+        buf[self.address+2] = 0
+
+
 def lookup_dmx_val(speeds, dmx_vals, speed):
     """Lookup appropriate dmx value using speed lookup table."""
     index = bisect_left(speeds, speed)
@@ -217,63 +283,3 @@ def lookup_dmx_val(speeds, dmx_vals, speed):
        return dmx_vals[index]
     else:
        return dmx_vals[index-1]
-
-
-def build_lut(meas):
-    v = [m[0] for m in meas]
-    s = [m[1]/UNIT_SPEED for m in meas]
-
-    ds_dv = [ds/dv for ds, dv in zip(delta(s), delta(v))]
-
-    min_value = v[0]
-
-    values = []
-    for value in range(v[0], v[-1]+1):
-        base_s, base_v, base_ds_dv = s[0], v[0], ds_dv[0]
-        for v0, s0, ds0 in zip(v, s, ds_dv):
-            if value - v0 < 0:
-                break
-            base_s, base_v, base_ds_dv = s0, v0, ds0
-
-
-        speed = base_s + (value - base_v)*base_ds_dv
-
-        values.append((speed, value - min_value))
-    return values
-
-def delta(vals):
-    return [h - l for l, h in zip(vals, vals[1:])]
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
