@@ -62,6 +62,18 @@ class GoboSpinna:
         speed_int = int(abs(value) * 256.0)
         return direction, min(max(speed_int, 0), 255)
 
+
+class LookupTable:
+    """Use a lookup table to set DMX values based on selected unit speed."""
+    speeds, dmx_vals = [], []
+
+    def __init__(self, address):
+        self.address = address
+        self.value = 0.0
+
+    def render(self, buf):
+        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
+        buf[self.address+1] = 0
 """
 --- Roto-Q DMX ---
 0: stopped
@@ -119,6 +131,22 @@ def roto_q_lut():
     # pick a value from the upper range to remove.  One of the duplicated values
     # makes the most sense, as the interpolated values are just plain wrong for
     # those anyway.
+    first_section = lut[:-5]
+    second_section = [(s, v-1) for s, v in lut[-4:]]
+    reverse_lut = list(reversed(list((-1*s, -1*v) for s, v in (first_section + second_section))))
+    assert len(reverse_lut) == len(lut) - 1
+
+    # offset the coordinates, add the center detent, and done
+    speeds, dmx_vals = [], []
+    for s, v in reverse_lut:
+        speeds.append(s)
+        dmx_vals.append(127 + v)
+    speeds.append(0.0)
+    dmx_vals.append(0)
+    for s, v in lut:
+        speeds.append(s)
+        dmx_vals.append(128 + v)
+    return speeds, dmx_vals
 
 
 class RotoQDmx:
@@ -128,14 +156,15 @@ class RotoQDmx:
     0: direction/speed
     1: set to 0 for rotation mode
     """
-    def __init__(self, address);
+    speeds, dmx_vals = roto_q_lut()
+
+    def __init__(self, address):
         self.address = address
         self.value = 0.0
 
     def render(self, buf):
-        # 218 on the upper end is the speed for value = 1.0
-        # 128 is the slowest in the positive direction
-        # only about 90 real speed values otherwise in this range
+        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
+        buf[self.address+1] = 0
 
 
 """
@@ -177,23 +206,17 @@ SMART_MOVE_MEAS = [
     (255, 0.344),
 ]
 
-def take_closest(myList, myNumber):
-    """
-    Assumes myList is sorted. Returns closest value to myNumber.
-
-    If two numbers are equally close, return the smallest number.
-    """
-    pos = bisect_left(myList, myNumber)
-    if pos == 0:
-        return myList[0]
-    if pos == len(myList):
-        return myList[-1]
-    before = myList[pos - 1]
-    after = myList[pos]
-    if after - myNumber < myNumber - before:
-       return after
+def lookup_dmx_val(speeds, dmx_vals, speed):
+    """Lookup appropriate dmx value using speed lookup table."""
+    index = bisect_left(speeds, speed)
+    if index == 0:
+        return dmx_vals[0]
+    if index == len(dmx_vals):
+        return dmx_vals[-1]
+    if speeds[index] - speed < speed - speeds[index-1]:
+       return dmx_vals[index]
     else:
-       return before
+       return dmx_vals[index-1]
 
 
 def build_lut(meas):
