@@ -220,23 +220,23 @@ def lookup_dmx_val(speeds, dmx_vals, speed):
 
 
 def build_lut(meas):
-    x = [m[0] for m in meas]
+    v = [m[0] for m in meas]
     s = [m[1]/UNIT_SPEED for m in meas]
 
-    ds_dx = [ds/dx for ds, dx in zip(delta(s), delta(x))]
+    ds_dv = [ds/dv for ds, dv in zip(delta(s), delta(v))]
 
-    min_value = x[0]
+    min_value = v[0]
 
     values = []
-    for value in range(x[0], x[-1]+1):
-        base_s, base_x, base_ds_dx = s[0], x[0], ds_dx[0]
-        for x0, s0, ds0 in zip(x, s, ds_dx):
-            if value - x0 < 0:
+    for value in range(v[0], v[-1]+1):
+        base_s, base_v, base_ds_dv = s[0], v[0], ds_dv[0]
+        for v0, s0, ds0 in zip(v, s, ds_dv):
+            if value - v0 < 0:
                 break
-            base_s, base_x, base_ds_dx = s0, x0, ds0
+            base_s, base_v, base_ds_dv = s0, v0, ds0
 
 
-        speed = base_s + (value - base_x)*base_ds_dx
+        speed = base_s + (value - base_v)*base_ds_dv
 
         values.append((speed, value - min_value))
     return values
