@@ -203,6 +203,10 @@ Bucketed speeds:
 
 Slowest: 124, 133
 Stopped: 125-132
+
+The LUT profile below seems to run a bit faster than expected compared to the
+other two profiles.  Should shake this out in the future.  For now, close enough
+for rave work.
 """
 # This shit is bananas, super-weird speed profile.
 SMART_MOVE_MEAS = [
