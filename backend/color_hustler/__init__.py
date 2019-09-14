@@ -88,7 +88,9 @@ def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
 
         gobo_trig = Trigger(rate=Rate(bpm=60.0))
         show.register_entity(gobo_trig, label('trigger', 3))
+
         show.gobo_hustler = GoboHustler(param_gen=gobo_mod, trig=gobo_trig, rotos=rotos)
+        show.register_entity(show.gobo_hustler, 'gobo_hustler')
 
     return show
 

@@ -1,4 +1,4 @@
-from .controllable import Controllable
+from .controllable import Controllable, validate_string_constant
 from itertools import cycle
 from . import frame_clock
 
@@ -15,19 +15,38 @@ def validate_iterable(subvalidator):
         return values
     return validate
 
-def validate_bank(text):
-    parsed = validate_iterable(validate_iterable(int))(text)
-    return cycle(parsed)
-
 def validate_easing(value):
     value = float(value)
     if value <= 0.0:
         raise ValueError("Negative easing makes no sense.")
 
+def create_banks(n):
+    indices = list(range(n))
+
+    every = cycle([indices])
+    singles = cycle([[i] for i in range(n)])
+
+    evens = [i for i in indices if i % 2 == 0]
+    odds = [i for i in indices if i % 2 == 1]
+
+    two_values = cycle([evens, odds])
+
+    return {
+        GoboHustler.ALL: every,
+        GoboHustler.SINGLE: singles,
+        GoboHustler.TWO_VALUE: two_values,
+    }
+
+
+
 class GoboHustler(Controllable):
+    ALL = 'all'
+    SINGLE = 'single'
+    TWO_VALUE = 'two_value'
+
     parameters = dict(
         easing=validate_easing,
-        bank=validate_bank,
+        bank_name=validate_string_constant([ALL, SINGLE, TWO_VALUE], 'bank name'),
     )
 
     def __init__(self, param_gen, trig, rotos):
@@ -46,9 +65,24 @@ class GoboHustler(Controllable):
 
         self.last_render = frame_clock.time()
 
-        self.bank = cycle([[i] for i in range(len(self.control_params))])
+        self._bank_name = self.SINGLE
+        self.banks = create_banks(len(self.control_params))
+        self.bank = self.banks[self._bank_name]
+
+
+    @property
+    def bank_name(self):
+        return None
+
+    @bank_name.setter
+    def bank_name(self, bank_name):
+        self._bank_name = bank_name
+        self.bank = self.banks[bank_name]
 
     def render(self, dmx_frame):
+        # we may need to switch banks
+        # FIXME this does NOT belong in the render method
+
         now = frame_clock.time()
 
         dt = now - self.last_render

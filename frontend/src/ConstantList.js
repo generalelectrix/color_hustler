@@ -2,7 +2,7 @@ import React from 'react'
 import Toggle from './Toggle'
 // Quick and dirty control over constant list driven modulators.
 
-const ConstantList = ({name, dispatch, displayName}) => {
+const ConstantList = ({name, dispatch}) => {
 
   const [values, setValues] = React.useState("[0.0]")
 

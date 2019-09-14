@@ -4,6 +4,7 @@ import Trigger from './Trigger'
 import ConstantList from './ConstantList'
 import Waveform from './Waveform'
 import Foldable from './Foldable'
+import GoboHustler from './GoboHustler'
 
 const ModulationChain = ({name, initialCenter, bipolar, index, dispatch}) => {
   return (
@@ -61,6 +62,12 @@ export const GoboChain = ({index, dispatch}) => {
           bipolar={true}
           index={index}
           dispatch={dispatch} />
+        <div className="panel">
+          <span>banks</span>
+          <GoboHustler
+            name="gobo_hustler"
+            dispatch={dispatch} />
+        </div>
         <div className="panel">
           <span>trigger</span>
           <Trigger
