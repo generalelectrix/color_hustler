@@ -20,7 +20,15 @@ from .rate import Trigger, Rate
 from .show import Show
 from .gobo_hustler import GoboHustler
 
-def create_show(midi_port_name, dmx_port=None, rotos=[], framerate=60.0):
+def label(name, index):
+    return name + str(index)
+
+def sublabel(name, index):
+    def labeler(subname):
+        return label("{}_{}".format(name, subname), index)
+    return labeler
+
+def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
     midi_port = mido.open_output(midi_port_name)
 
     show = Show(framerate=framerate, midi_port=midi_port, dmx_port=dmx_port)
@@ -48,29 +56,25 @@ def create_show(midi_port_name, dmx_port=None, rotos=[], framerate=60.0):
 
         return waveform_mod
 
-    def create_color_chain(index):
-        def label(name):
-            return name + str(index)
 
-        def sublabel(name):
-            def labeler(subname):
-                return label("{}_{}".format(name, subname))
-            return labeler
+
+    def create_color_chain(index):
+
 
         # build modulation chains for each color coordinate
-        h_gen = add_random_source(label('hue'), center=0.0)
-        h_mod = create_mod_chain(h_gen, sublabel('hue'))
+        h_gen = add_random_source(label('hue', index), center=0.0)
+        h_mod = create_mod_chain(h_gen, sublabel('hue', index))
 
-        s_gen = add_random_source(label('saturation'), center=1.0)
-        s_mod = create_mod_chain(s_gen, sublabel('saturation'))
+        s_gen = add_random_source(label('saturation', index), center=1.0)
+        s_mod = create_mod_chain(s_gen, sublabel('saturation', index))
 
-        l_gen = add_random_source(label('lightness'), center=0.5)
-        l_mod = create_mod_chain(l_gen, sublabel('lightness'))
+        l_gen = add_random_source(label('lightness', index), center=0.5)
+        l_mod = create_mod_chain(l_gen, sublabel('lightness', index))
 
         color_gen = ColorGenerator(h_gen=h_mod, s_gen=s_mod, v_gen=l_mod)
 
         note_trig = Trigger(rate=Rate(bpm=60.0))
-        show.register_entity(note_trig, label('trigger'))
+        show.register_entity(note_trig, label('trigger', index))
         organist = ColorOrganist(ctrl_channel=index, note_trig=note_trig, col_gen=color_gen)
         show.organists.add(organist)
 
@@ -79,11 +83,11 @@ def create_show(midi_port_name, dmx_port=None, rotos=[], framerate=60.0):
     create_color_chain(2)
 
     if dmx_port is not None:
-        gobo_gen = add_random_source('rotation', center=0.0)
-        gobo_mod = create_mod_chain(
-            gobo_gen, lambda name: "{}_{}".format('rotation', name))
+        gobo_gen = add_random_source(label('rotation', 3), center=0.0)
+        gobo_mod = create_mod_chain(gobo_gen, sublabel('rotation', 3))
 
         gobo_trig = Trigger(rate=Rate(bpm=60.0))
+        show.register_entity(gobo_trig, label('trigger', 3))
         show.gobo_hustler = GoboHustler(param_gen=gobo_mod, trig=gobo_trig, rotos=rotos)
 
     return show

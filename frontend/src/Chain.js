@@ -28,10 +28,10 @@ const ModulationChain = ({name, initialCenter, index, dispatch}) => {
   )
 }
 
-const Chain = ({index, dispatch}) => {
+export const ColorChain = ({index, dispatch, label}) => {
   return (
     <div>
-      channel {index + 1}
+      {label ? label : "channel" + (index + 1)}
       <div className="flexrow">
         <ModulationChain name="hue" initialCenter={0.0} index={index} dispatch={dispatch} />
         <ModulationChain name="saturation" initialCenter={1.0} index={index} dispatch={dispatch} />
@@ -49,4 +49,21 @@ const Chain = ({index, dispatch}) => {
   )
 }
 
-export default Chain
+export const GoboChain = ({index, dispatch}) => {
+  return (
+    <div>
+      gobo rotation
+      <div className="flexrow">
+        <ModulationChain name="rotation" initialCenter={0.0} index={index} dispatch={dispatch} />
+        <div className="panel">
+          <span>trigger</span>
+          <Trigger
+            name={"trigger" + index}
+            initialBpm={60.0}
+            dispatch={dispatch} />
+        </div>
+      </div>
+    </div>
+
+  )
+}
