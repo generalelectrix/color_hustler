@@ -19,10 +19,14 @@ def validate_bank(text):
     parsed = validate_iterable(validate_iterable(int))(text)
     return cycle(parsed)
 
+def validate_easing(value):
+    value = float(value)
+    if value <= 0.0:
+        raise ValueError("Negative easing makes no sense.")
 
 class GoboHustler(Controllable):
     parameters = dict(
-        easing=float,
+        easing=validate_easing,
         bank=validate_bank,
     )
 
@@ -76,5 +80,15 @@ class Easer:
 
         dv_max = dt * easing
 
-        self.current += min(dv, dv_max)
+
+        # TODO clean this up once the internet is available
+        if abs(dv) > dv_max:
+            if dv > 0.0:
+                actual_dv = dv_max
+            else:
+                actual_dv = -1.0*dv_max
+        else:
+            actual_dv = dv
+
+        self.current += actual_dv
         return self.current

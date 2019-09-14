@@ -5,13 +5,14 @@ import ConstantList from './ConstantList'
 import Waveform from './Waveform'
 import Foldable from './Foldable'
 
-const ModulationChain = ({name, initialCenter, index, dispatch}) => {
+const ModulationChain = ({name, initialCenter, bipolar, index, dispatch}) => {
   return (
     <div className="panel flexrow">
       <Foldable label={name}>
         <Noise
           name={name + index}
           initialCenter={initialCenter}
+          bipolar={bipolar}
           dispatch={dispatch} />
       </Foldable>
       <Foldable label="offsets" startVisible={false}>
@@ -54,7 +55,12 @@ export const GoboChain = ({index, dispatch}) => {
     <div>
       gobo rotation
       <div className="flexrow">
-        <ModulationChain name="rotation" initialCenter={0.0} index={index} dispatch={dispatch} />
+        <ModulationChain
+          name="rotation"
+          initialCenter={0.0}
+          bipolar={true}
+          index={index}
+          dispatch={dispatch} />
         <div className="panel">
           <span>trigger</span>
           <Trigger

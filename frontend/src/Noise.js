@@ -5,7 +5,7 @@ import { Slider } from './Slider'
 const GAUSSIAN = 'gaussian'
 const UNIFORM = 'uniform'
 
-const Noise = ({name, initialCenter, dispatch}) => {
+const Noise = ({name, initialCenter, bipolar, dispatch}) => {
 
   const [mode, setMode] = React.useState(GAUSSIAN)
   const [center, setCenter] = React.useState(initialCenter)
@@ -31,6 +31,7 @@ const Noise = ({name, initialCenter, dispatch}) => {
         <Slider
           label="center"
           value={center}
+          min={bipolar ? -1.0 : 0.0}
           onChange={v => updateAndSend("center", v, setCenter)} />
         <Slider
           label="width"

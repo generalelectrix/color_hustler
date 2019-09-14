@@ -68,6 +68,9 @@ class Show(object):
 
         if self.gobo_hustler is not None and self.dmx_port is not None:
             self.gobo_hustler.render(self.dmx_port.dmx_frame)
+            if self.debug:
+
+                print(self.dmx_port.dmx_frame[449:])
             self.dmx_port.render()
 
     def process_commands_until_render(self):
