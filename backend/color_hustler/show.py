@@ -11,12 +11,14 @@ from . import frame_clock
 
 class Show(object):
     """Encapsulate the show runtime environment."""
-    def __init__(self, framerate, midi_port):
+    def __init__(self, framerate, midi_port, dmx_port=None):
         frame_clock.tick()
         self.render_trigger = Trigger(rate=Rate(hz=framerate), clock=time)
 
         self.entities = dict()
         self.organists = set()
+        self.gobo_hustler = None
+        self.dmx_port = dmx_port
 
         self.cmd_queue = Queue()
         # callables that are passed command responses
@@ -63,6 +65,10 @@ class Show(object):
         # command the organists to play
         for organist in self.organists:
             organist.play(self.midi_port)
+
+        if self.gobo_hustler is not None and self.dmx_port is not None:
+            self.gobo_hustler.render(self.dmx_port.dmx_frame)
+            self.dmx_port.render()
 
     def process_commands_until_render(self):
         """Use any remaining time until rendering a frame to handle commands."""

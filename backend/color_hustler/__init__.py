@@ -10,6 +10,7 @@ from queue import Queue
 from threading import Thread
 
 import mido
+import pyenttec
 import websockets
 
 from .color import ColorGenerator
@@ -17,11 +18,12 @@ from .organ import ColorOrganist
 from .param_gen import Noise, ConstantList, Modulator, Waveform
 from .rate import Trigger, Rate
 from .show import Show
+from .gobo_hustler import GoboHustler
 
-def create_show(midi_port_name, framerate=60.0):
+def create_show(midi_port_name, dmx_port=None, rotos=[], framerate=60.0):
     midi_port = mido.open_output(midi_port_name)
 
-    show = Show(framerate=framerate, midi_port=midi_port)
+    show = Show(framerate=framerate, midi_port=midi_port, dmx_port=dmx_port)
 
     def add_random_source(name, center):
         generator = Noise(mode=Noise.GAUSSIAN, center=center, width=0.0)
@@ -76,6 +78,14 @@ def create_show(midi_port_name, framerate=60.0):
     create_color_chain(1)
     create_color_chain(2)
 
+    if dmx_port is not None:
+        gobo_gen = add_random_source('rotation', center=0.0)
+        gobo_mod = create_mod_chain(
+            gobo_gen, lambda name: "{}_{}".format('rotation', name))
+
+        gobo_trig = Trigger(rate=Rate(bpm=60.0))
+        show.gobo_hustler = GoboHustler(param_gen=gobo_mod, trig=gobo_trig, rotos=rotos)
+
     return show
 
 def run_websocket_server(port, cmd_queue, resp_queue):
@@ -122,13 +132,13 @@ class Application(cmd.Cmd):
     """cmd module style show controller.
     Owns the show runtime environment thread.
     """
-    def __init__(self):
+    def __init__(self, dmx_port=None, rotos=tuple()):
         cmd.Cmd.__init__(self)
         print("Color Organist")
         port_name = mido.get_output_names()[0]
         print("Using midi port {}.".format(port_name))
 
-        show = create_show(port_name)
+        show = create_show(midi_port_name=port_name, dmx_port=dmx_port, rotos=rotos)
 
         self.cmd_queue = show.cmd_queue
 
