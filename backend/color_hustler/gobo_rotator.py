@@ -7,6 +7,10 @@ __all__ = (
     'SmartMoveDmx',
 )
 
+# TODO use attrsetter when have internet and can look it up
+def attrsetter(obj, attr):
+    return lambda value: setattr(obj, attr, value)
+
 def build_lut(meas):
     """Build a reverse speed lookup table from measurements.
 
@@ -83,6 +87,9 @@ class GoboSpinna:
         self.address = address
         self.g0 = 0.0
         self.g1 = 0.0
+
+    def get_controls(self):
+        return [attrsetter(self, 'g0'), attrsetter(self, 'g1')]
 
     def render(self, buf):
         index = self.address - 1
@@ -187,6 +194,9 @@ class RotoQDmx:
         self.address = address
         self.value = 0.0
 
+    def get_controls(self):
+        return [attrsetter(self, 'value')]
+
     def render(self, buf):
         index = self.address - 1
         # The negation on the value is to make direction consistent with the other two rotators.
@@ -271,6 +281,9 @@ class SmartMoveDmx:
     def __init__(self, address):
         self.address = address
         self.value = 0.0
+
+    def get_controls(self):
+        return [attrsetter(self, 'value')]
 
     def render(self, buf):
         index = self.address - 1
