@@ -85,12 +85,13 @@ class GoboSpinna:
         self.g1 = 0.0
 
     def render(self, buf):
+        index = self.address - 1
         d0, s0 = self._render_single(self.g0)
         d1, s1 = self._render_single(self.g1)
-        buf[self.address] = d0
-        buf[self.address + 1] = s0
-        buf[self.address + 2] = d1
-        buf[self.address + 3] = s1
+        buf[index] = d0
+        buf[index + 1] = s0
+        buf[index + 2] = d1
+        buf[index + 3] = s1
 
     def _render_single(self, value):
         direction = 0 if value <= 0.0 else 255
@@ -187,9 +188,10 @@ class RotoQDmx:
         self.value = 0.0
 
     def render(self, buf):
+        index = self.address - 1
         # The negation on the value is to make direction consistent with the other two rotators.
-        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, -1.0 * self.value)
-        buf[self.address+1] = 0
+        buf[index] = lookup_dmx_val(self.speeds, self.dmx_vals, -1.0 * self.value)
+        buf[index+1] = 0
 
 
 """
@@ -271,9 +273,10 @@ class SmartMoveDmx:
         self.value = 0.0
 
     def render(self, buf):
-        buf[self.address] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
-        buf[self.address+1] = 0
-        buf[self.address+2] = 0
+        index = self.address - 1
+        buf[index] = lookup_dmx_val(self.speeds, self.dmx_vals, self.value)
+        buf[index+1] = 0
+        buf[index+2] = 0
 
 
 def lookup_dmx_val(speeds, dmx_vals, speed):
