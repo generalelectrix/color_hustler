@@ -1,6 +1,8 @@
-from .controllable import Controllable, validate_string_constant
 from itertools import cycle
+
 from . import frame_clock
+from .controllable import Controllable, validate_string_constant
+from .rate import validate_positive
 
 def validate_iterable(subvalidator):
     def validate(items):
@@ -15,10 +17,6 @@ def validate_iterable(subvalidator):
         return values
     return validate
 
-def validate_easing(value):
-    value = float(value)
-    if value <= 0.0:
-        raise ValueError("Negative easing makes no sense.")
 
 def create_banks(n):
     indices = list(range(n))
@@ -45,7 +43,7 @@ class GoboHustler(Controllable):
     TWO_VALUE = 'two_value'
 
     parameters = dict(
-        easing=validate_easing,
+        easing=validate_positive,
         bank_name=validate_string_constant([ALL, SINGLE, TWO_VALUE], 'bank name'),
     )
 
