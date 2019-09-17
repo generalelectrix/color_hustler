@@ -72,9 +72,20 @@ class RateProperties:
     def bpm(self, bpm):
         self._rate.bpm = bpm
 
+def validate_positive(value):
+    value = float(value)
+    if value <= 0.0:
+        raise ValueError("Rates must be non-zero.")
+    return value
+
 class Trigger(Controllable, RateProperties):
     """Polling-based scheduling of an operation."""
-    parameters = dict(period=float, hz=float, bpm=float, reset=bool, active=bool)
+    parameters = dict(
+        period=validate_positive,
+        hz=validate_positive,
+        bpm=validate_positive,
+        reset=bool,
+        active=bool)
 
     def __init__(self, rate, clock=None):
         """Create a new Trigger.
