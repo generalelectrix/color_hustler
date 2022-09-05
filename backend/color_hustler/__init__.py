@@ -18,17 +18,26 @@ from .organ import ColorOrganist
 from .param_gen import Noise, ConstantList, Modulator, Waveform
 from .rate import Trigger, Rate
 from .show import Show
-from .gobo_hustler import GoboHustler
+from .leko_hustler import LekoHustler
+
 
 def label(name, index):
     return name + str(index)
+
 
 def sublabel(name, index):
     def labeler(subname):
         return label("{}_{}".format(name, subname), index)
     return labeler
 
-def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
+
+def create_show(
+    midi_port_name,
+    dmx_port=None,
+    rotos=tuple(),
+    dimmers=tuple(),
+    framerate=60.0,
+):
     midi_port = mido.open_output(midi_port_name)
 
     show = Show(framerate=framerate, midi_port=midi_port, dmx_port=dmx_port)
@@ -56,10 +65,7 @@ def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
 
         return waveform_mod
 
-
-
     def create_color_chain(index):
-
 
         # build modulation chains for each color coordinate
         h_gen = add_random_source(label('hue', index), center=0.0)
@@ -75,7 +81,8 @@ def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
 
         note_trig = Trigger(rate=Rate(bpm=60.0))
         show.register_entity(note_trig, label('trigger', index))
-        organist = ColorOrganist(ctrl_channel=index, note_trig=note_trig, col_gen=color_gen)
+        organist = ColorOrganist(
+            ctrl_channel=index, note_trig=note_trig, col_gen=color_gen)
         show.organists.add(organist)
 
     create_color_chain(0)
@@ -89,10 +96,22 @@ def create_show(midi_port_name, dmx_port=None, rotos=tuple(), framerate=60.0):
         gobo_trig = Trigger(rate=Rate(bpm=60.0))
         show.register_entity(gobo_trig, label('trigger', 3))
 
-        show.gobo_hustler = GoboHustler(param_gen=gobo_mod, trig=gobo_trig, rotos=rotos)
+        show.gobo_hustler = LekoHustler(
+            param_gen=gobo_mod, trig=gobo_trig, fixtures=rotos)
         show.register_entity(show.gobo_hustler, 'gobo_hustler')
 
+        dimmer_gen = add_random_source(label('level', 4), center=1.0)
+        dimmer_mod = create_mod_chain(dimmer_gen, sublabel('level', 4))
+
+        dimmer_trig = Trigger(rate=Rate(bpm=60.0))
+        show.register_entity(dimmer_trig, label('trigger', 4))
+
+        show.dimmer_hustler = LekoHustler(
+            param_gen=dimmer_mod, trig=dimmer_trig, fixtures=dimmers)
+        show.register_entity(show.dimmer_hustler, 'dimmer_hustler')
+
     return show
+
 
 def run_websocket_server(port, cmd_queue, resp_queue):
     """Start up a simple websocket server that deserializes messages."""
@@ -134,23 +153,31 @@ def run_websocket_server(port, cmd_queue, resp_queue):
     event_loop.run_until_complete(start_server)
     event_loop.run_forever()
 
+
 class Application(cmd.Cmd):
     """cmd module style show controller.
     Owns the show runtime environment thread.
     """
-    def __init__(self, dmx_port=None, rotos=tuple()):
+
+    def __init__(self, dmx_port=None, rotos=tuple(), dimmers=tuple()):
         cmd.Cmd.__init__(self)
         print("Color Organist")
         port_name = mido.get_output_names()[0]
         print("Using midi port {}.".format(port_name))
 
-        show = create_show(midi_port_name=port_name, dmx_port=dmx_port, rotos=rotos)
+        show = create_show(
+            midi_port_name=port_name,
+            dmx_port=dmx_port,
+            rotos=rotos,
+            dimmers=dimmers,
+        )
 
         self.cmd_queue = show.cmd_queue
 
         # fan the show responses out to the command line and the frontend
         # use a fake queue that just prints synchronously to report to the command line
         frontend_queue = Queue()
+
         def show_resp(resp):
             try:
                 resp_type, payload = resp

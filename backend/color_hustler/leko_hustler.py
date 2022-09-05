@@ -4,6 +4,7 @@ from . import frame_clock
 from .controllable import Controllable, validate_string_constant
 from .rate import validate_positive
 
+
 def validate_iterable(subvalidator):
     def validate(items):
         try:
@@ -30,43 +31,45 @@ def create_banks(n):
     two_values = cycle([evens, odds])
 
     return {
-        GoboHustler.ALL: every,
-        GoboHustler.SINGLE: singles,
-        GoboHustler.TWO_VALUE: two_values,
+        LekoHustler.ALL: every,
+        LekoHustler.SINGLE: singles,
+        LekoHustler.TWO_VALUE: two_values,
     }
 
 
-
-class GoboHustler(Controllable):
+class LekoHustler(Controllable):
+    """Control a collection of DMX-controllable fixtures."""
     ALL = 'all'
     SINGLE = 'single'
     TWO_VALUE = 'two_value'
 
     parameters = dict(
         easing=validate_positive,
-        bank_name=validate_string_constant([ALL, SINGLE, TWO_VALUE], 'bank name'),
+        bank_name=validate_string_constant(
+            [ALL, SINGLE, TWO_VALUE], 'bank name'),
     )
 
-    def __init__(self, param_gen, trig, rotos):
+    def __init__(self, param_gen, trig, fixtures):
         self.easing = 0.1
         self.param_gen = param_gen
         self.controls = []
 
         self.trig = trig
 
-        self.rotos = rotos
+        self.fixtures = fixtures
 
-        for roto in rotos:
-            self.controls.extend(roto.get_controls())
+        for fixture in fixtures:
+            self.controls.extend(fixture.get_controls())
 
-        self.control_params = [Easer(0.0) for _ in self.controls]
+        initial_value = param_gen.get()
+
+        self.control_params = [Easer(initial_value) for _ in self.controls]
 
         self.last_render = frame_clock.time()
 
         self._bank_name = self.SINGLE
         self.banks = create_banks(len(self.control_params))
         self.bank = self.banks[self._bank_name]
-
 
     @property
     def bank_name(self):
@@ -98,11 +101,13 @@ class GoboHustler(Controllable):
             value = param.ease(dt, self.easing)
             control(value)
 
-        for roto in self.rotos:
-            roto.render(dmx_frame)
+        for fixture in self.fixtures:
+            fixture.render(dmx_frame)
+
 
 class Easer:
     """Linearly ease current value towards target by at most easing/second."""
+
     def __init__(self, initial_value):
         self.target = initial_value
         self.current = initial_value
@@ -111,7 +116,6 @@ class Easer:
         dv = self.target - self.current
 
         dv_max = dt * easing
-
 
         # TODO clean this up once the internet is available
         if abs(dv) > dv_max:

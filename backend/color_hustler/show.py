@@ -18,6 +18,7 @@ class Show(object):
         self.entities = dict()
         self.organists = set()
         self.gobo_hustler = None
+        self.dimmer_hustler = None
         self.dmx_port = dmx_port
 
         self.cmd_queue = Queue()
@@ -66,11 +67,14 @@ class Show(object):
         for organist in self.organists:
             organist.play(self.midi_port)
 
-        if self.gobo_hustler is not None and self.dmx_port is not None:
-            self.gobo_hustler.render(self.dmx_port.dmx_frame)
-            if self.debug:
+        if self.dmx_port is not None:
+            if self.gobo_hustler is not None:
+                self.gobo_hustler.render(self.dmx_port.dmx_frame)
 
-                print(self.dmx_port.dmx_frame[449:])
+            if self.dimmer_hustler is not None:
+                self.dimmer_hustler.render(self.dmx_port.dmx_frame)
+            if self.debug:
+                print(self.dmx_port.dmx_frame[:5], self.dmx_port.dmx_frame[454:])
             self.dmx_port.render()
 
     def process_commands_until_render(self):

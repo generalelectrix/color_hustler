@@ -1,20 +1,19 @@
-import React from 'react'
-import { StatefulSlider } from './Slider'
+import React from "react";
+import { StatefulSlider } from "./Slider";
 // Define a bank and set easing parameter.
 
-const SINGLE = "single"
-const ALL = "all"
-const TWO_VALUE = "two_value"
+const SINGLE = "single";
+const ALL = "all";
+const TWO_VALUE = "two_value";
 
-const GoboHustler = ({name, dispatch}) => {
+const LekoHustler = ({ name, dispatch }) => {
+  const [bank, setBank] = React.useState(SINGLE);
 
-  const [bank, setBank] = React.useState(SINGLE)
-
-  const updateBank = e => {
-    const v = e.target.value
-    setBank(v)
-    dispatch(name, "bank_name", v)
-  }
+  const updateBank = (e) => {
+    const v = e.target.value;
+    setBank(v);
+    dispatch(name, "bank_name", v);
+  };
 
   return (
     <div className="flexcol stretch">
@@ -29,10 +28,10 @@ const GoboHustler = ({name, dispatch}) => {
         min={0.001}
         max={10.0}
         showValue={true}
-        onChange={v => dispatch(name, "easing", v)} />
+        onChange={(v) => dispatch(name, "easing", v)}
+      />
     </div>
+  );
+};
 
-  )
-}
-
-export default GoboHustler
+export default LekoHustler;
