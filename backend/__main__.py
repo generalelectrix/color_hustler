@@ -22,6 +22,10 @@ if use_rotos:
         Dimmer(2),
         Dimmer(3),
         Dimmer(4),
+        Dimmer(5),
+        Dimmer(6),
+        Dimmer(7),
+        Dimmer(8),
     ]
 
     port = pyenttec.select_port()

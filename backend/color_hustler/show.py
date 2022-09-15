@@ -74,7 +74,7 @@ class Show(object):
             if self.dimmer_hustler is not None:
                 self.dimmer_hustler.render(self.dmx_port.dmx_frame)
             if self.debug:
-                print(self.dmx_port.dmx_frame[:5], self.dmx_port.dmx_frame[454:])
+                print(self.dmx_port.dmx_frame[:9], self.dmx_port.dmx_frame[454:])
             self.dmx_port.render()
 
     def process_commands_until_render(self):

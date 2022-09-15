@@ -162,7 +162,9 @@ class Application(cmd.Cmd):
     def __init__(self, dmx_port=None, rotos=tuple(), dimmers=tuple()):
         cmd.Cmd.__init__(self)
         print("Color Organist")
-        port_name = mido.get_output_names()[0]
+        port_names = mido.get_output_names()
+        print(port_names)
+        port_name = port_names[1]
         print("Using midi port {}.".format(port_name))
 
         show = create_show(
