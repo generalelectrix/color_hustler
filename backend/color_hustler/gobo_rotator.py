@@ -104,6 +104,60 @@ class GoboSpinna:
         direction = 0 if value <= 0.0 else 255
         speed_int = int(abs(value) * 256.0)
         return direction, min(max(speed_int, 0), 255)
+    
+
+VARISPEED_MEAS = [
+    (5, 0),
+    (10, 0.005331),
+    (15, 0.009365),
+    (20, 0.012991),
+    (25, 0.016860),
+    (30, 0.020665888353944173),
+    (35, 0.02436561608726548),
+    (40, 0.028177784904943316),
+    (45, 0.03203382037453513),
+    (50, 0.03575878517267219),
+    (55, 0.039799290612457676),
+    (60, 0.0432223698484465),
+    (100, 0.07435610885207719),
+    (150, 0.11187585336998046),
+    (200, 0.14974241458862855),
+    (250, 0.1871409362476808),
+    (255, 0.19027611195544866),
+]
+
+class Varispeed:
+    """DHA Varispeed driven by DHA DC Controller DMX.
+
+    Unsurprisingly, speed ramp is nearly identical to the GOBO SPINNAZ, but with
+    a small detent near DMX 0.
+
+    """
+    def __init__(self, address):
+        self.address = address
+        self.g0 = 0.0
+        self.g1 = 0.0
+
+    def get_controls(self):
+        return [attrsetter(self, 'g0'), attrsetter(self, 'g1')]
+
+    def render(self, buf):
+        index = self.address - 1
+        self._render_single(self.g0, buf, index)
+        self._render_single(self.g1, buf, index+2)
+        print(buf)
+
+    def _render_single(self, value, buf, index):
+        speed_int = min(int(abs(value) * 245.0) + 5, 255)
+        if speed_int == 5:
+            speed_int = 0
+        
+        if value > 0.0:
+            buf[index] = speed_int
+            buf[index+1] = 0
+        else:
+            buf[index] = 0
+            buf[index+1] = speed_int
 
 
 """
@@ -303,3 +357,4 @@ def lookup_dmx_val(speeds, dmx_vals, speed):
        return dmx_vals[index]
     else:
        return dmx_vals[index-1]
+    

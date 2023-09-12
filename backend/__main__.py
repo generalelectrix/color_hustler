@@ -2,7 +2,7 @@ from color_hustler import Application
 use_rotos = True
 
 if use_rotos:
-    from color_hustler.gobo_rotator import SmartMoveDmx, RotoQDmx, GoboSpinna
+    from color_hustler.gobo_rotator import SmartMoveDmx, RotoQDmx, GoboSpinna, Varispeed
     from color_hustler.dimmer import Dimmer
     import pyenttec
 
@@ -15,6 +15,8 @@ if use_rotos:
         RotoQDmx(506),
         GoboSpinna(470),
         GoboSpinna(474),
+        Varispeed(1),
+        Varispeed(5),
     ]
 
     dimmers = [Dimmer(x+460) for x in range(0, 8)]
