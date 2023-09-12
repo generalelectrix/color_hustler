@@ -13,20 +13,12 @@ if use_rotos:
         RotoQDmx(502),
         RotoQDmx(504),
         RotoQDmx(506),
-        GoboSpinna(450),
-        GoboSpinna(454),
+        GoboSpinna(470),
+        GoboSpinna(474),
     ]
 
-    dimmers = [
-        Dimmer(1),
-        Dimmer(2),
-        Dimmer(3),
-        Dimmer(4),
-        Dimmer(5),
-        Dimmer(6),
-        Dimmer(7),
-        Dimmer(8),
-    ]
+    dimmers = [Dimmer(x+460) for x in range(0, 8)]
+    print(len(dimmers))
 
     port = pyenttec.select_port()
 else:

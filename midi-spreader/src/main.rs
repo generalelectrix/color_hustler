@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let now = Instant::now();
         if let Some(ref buf) = buffer {
             if now.duration_since(last_sent) >= DELAY {
-                println!("Sending {:?}", buf);
+                // println!("Sending {:?}", buf);
                 if let Err(err) = output.send(buf) {
                     println!("Message send error: {}", err);
                 }
@@ -32,13 +32,13 @@ fn main() -> Result<(), Box<dyn Error>> {
                 buffer = None;
             } else {
                 let time_to_next_send = (last_sent + DELAY).duration_since(now);
-                println!("Sleep {:?}", time_to_next_send);
+                // println!("Sleep {:?}", time_to_next_send);
                 sleep(time_to_next_send);
             }
             continue;
         }
         buffer = Some(recv.recv()?);
-        println!("Receieved buffer: {:?}", buffer);
+        // println!("Receieved buffer: {:?}", buffer);
     }
 }
 

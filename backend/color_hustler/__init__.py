@@ -87,7 +87,6 @@ def create_show(
 
     create_color_chain(0)
     create_color_chain(1)
-    create_color_chain(2)
 
     if dmx_port is not None:
         gobo_gen = add_random_source(label('rotation', 3), center=0.0)
@@ -164,7 +163,8 @@ class Application(cmd.Cmd):
         print("Color Organist")
         port_names = mido.get_output_names()
         print(port_names)
-        port_name = port_names[1]
+        # port_name = port_names[1]
+        port_name = "IAC Driver Bus 1"
         print("Using midi port {}.".format(port_name))
 
         show = create_show(

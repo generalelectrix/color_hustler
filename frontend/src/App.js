@@ -15,9 +15,8 @@ const dispatch = (name, attr, payload) => {
 function App() {
   return (
     <div className="App">
-      <ColorChain dispatch={dispatch} index={0} label="rainbow g2s" />
+      <ColorChain dispatch={dispatch} index={0} label="stage deco" />
       <ColorChain dispatch={dispatch} index={1} label="tree uplights" />
-      <ColorChain dispatch={dispatch} index={2} label="source 4s" />
       <GoboChain dispatch={dispatch} index={3} />
       <DimmerChain dispatch={dispatch} index={4} />
     </div>
